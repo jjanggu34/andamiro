@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
 import NoData from '@/components/common/NoData.vue'
+import ModalFull from '@/components/layout/modalFull.vue'
 import { useDiaryStore } from '@/stores/diary'
 import { useAdviceEnricher } from '@/composables/useAdviceEnricher'
 
@@ -15,6 +16,43 @@ const todayStr = today.toISOString().split('T')[0]
 const SCORE_BY_EMOTION = { best: 92, good: 72, normal: 58, bad: 42, worst: 28 }
 const EMOTION_KO = { best: '최고예요!', good: '좋아요!', normal: '보통이에요', bad: '별로예요', worst: '최악이에요' }
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+const FORTUNES = [
+  '오후 3시, 달콤한 커피 한 잔이 당신의 운을 깨워줄 거예요.',
+  '이미 당신 마음 속에 답이 있어요. 그 길을 믿고 나아가세요.',
+  '조금 늦더라도 괜찮아요. 당신의 속도는 틀리지 않았습니다.',
+  '오늘은 주변의 조언보다 당신의 직감을 따르는 것이 좋습니다.',
+  '생각보다 큰 행운이 가까이 와 있어요. 마음을 열고 기다려보세요.',
+  '완벽하지 않아도 괜찮습니다. 시작했다는 것만으로도 충분해요.',
+]
+
+const showFortune = ref(false)
+const isOpened = ref(false)
+const isAnimating = ref(false)
+const fortuneText = ref('')
+const cookieSrc = ref('/assets/img/advice/popup-img-fortune.png')
+
+function openCookie() {
+  if (isAnimating.value || isOpened.value) return
+  isAnimating.value = true
+  setTimeout(() => {
+    cookieSrc.value = '/assets/img/advice/popup-img-fortune-cookie.png'
+    const msg = FORTUNES[Math.floor(Math.random() * FORTUNES.length)]
+    setTimeout(() => {
+      fortuneText.value = msg
+      isOpened.value = true
+      isAnimating.value = false
+    }, 280)
+  }, 1200)
+}
+
+function closeFortune() {
+  showFortune.value = false
+  isOpened.value = false
+  isAnimating.value = false
+  fortuneText.value = ''
+  cookieSrc.value = '/assets/img/advice/popup-img-fortune.png'
+}
 
 const record = ref(null)
 const hasData = computed(() => !!record.value)
@@ -66,7 +104,7 @@ onMounted(async () => {
         <template v-if="hasData">
           <section class="importance-content">
             <div class="button-content" aria-label="포춘쿠키">
-              <button type="button" class="advice-fortune-btn">
+              <button type="button" class="advice-fortune-btn" @click="showFortune = true">
                 <span>포춘쿠키를 확인하세요</span>
               </button>
             </div>
@@ -117,4 +155,40 @@ onMounted(async () => {
       <AppTabBar />
     </template>
   </PageLayout>
+
+  <ModalFull :show="showFortune" @close="closeFortune">
+    <div class="popup-fortune">
+      <h3 class="popup-fortune__tit">
+        <img src="/assets/img/advice/popup-fortune-tit.png" alt="오늘의 운세" />
+      </h3>
+      <div class="fortune-cookie-block">
+        <p class="fortune-subtitle">바삭한 쿠키속에 숨겨진 <strong>당신의 행운</strong>을 확인해보세요!</p>
+        <div class="fortune-glow" aria-hidden="true"></div>
+        <div
+          class="cookie-container"
+          role="button"
+          tabindex="0"
+          aria-label="포춘쿠키 열기"
+          @click="openCookie"
+          @keydown.enter.prevent="openCookie"
+          @keydown.space.prevent="openCookie"
+        >
+          <img
+            v-show="!isOpened"
+            :src="cookieSrc"
+            :class="['cookie-img', { shaking: isAnimating }]"
+            alt="포춘쿠키"
+          />
+          <p v-show="isOpened" class="fortune-text">{{ fortuneText }}</p>
+        </div>
+      </div>
+    </div>
+  </ModalFull>
 </template>
+
+<style scoped lang="scss">
+.popup-fortune {
+  .popup-fortune__tit { display: block; width:100%; max-width:290px; margin:0 auto; }
+}
+.fortune-cookie-block { max-width:375px; height:500px; margin:0 auto;  background:src("/public/assets/img/advice/popup-bg-fortune.png") no-repeat center top / 100%; }
+</style>

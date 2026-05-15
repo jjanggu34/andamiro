@@ -211,7 +211,7 @@ onMounted(async () => {
             <div class="card-item">
               <h3>
                 <span class="icon01"></span>
-                오늘은 이렇게 보내고 계시는군요!
+                그날은 이렇게 보내고 있었네요!
               </h3>
               <p class="result-insights">{{ analysis.insight || '이날의 감정 기록을 되돌아봐요.' }}</p>
               <div class="card-tips">
@@ -219,7 +219,7 @@ onMounted(async () => {
                 <p>{{ analysis.summary }}</p>
               </div>
             </div>
-            <div v-if="analysis.recommendations.length" class="card-item">
+            <!--<div v-if="analysis.recommendations.length" class="card-item">
               <h3>
                 <span class="icon02"></span>
                 내일은 이렇게 준비해보세요!
@@ -230,7 +230,7 @@ onMounted(async () => {
                   <p>{{ rec.body }}</p>
                 </li>
               </ol>
-            </div>
+            </div>-->
           </section>
         </template>
 

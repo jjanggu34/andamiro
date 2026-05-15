@@ -400,7 +400,6 @@ onBeforeUnmount(stopVoice)
             </svg>
           </button>
         </div>
-
         <!-- 숨겨진 파일 입력 -->
         <input ref="fileInput" type="file" accept="image/*" class="chat-visually-hidden" tabindex="-1" aria-hidden="true" @change="handleImageFile" />
       </footer>

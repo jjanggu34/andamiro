@@ -135,11 +135,16 @@ async function saveAndGo(path, state = {}) {
       emotion: chat.emotion,
       content: chat.content,
       summary: JSON.stringify({
-        headline: analysis.value?.headline,
-        insight:  analysis.value?.insight,
-        color:    analysis.value?.color,
-        tags:     analysis.value?.tags,
-        tips:     analysis.value?.tips,
+        score:           analysis.value?.score,
+        mood:            analysis.value?.mood,
+        headline:        analysis.value?.headline,
+        metrics:         analysis.value?.metrics,
+        insight:         analysis.value?.insight,
+        summary:         analysis.value?.summary,
+        recommendations: analysis.value?.recommendations,
+        color:           analysis.value?.color,
+        tags:            analysis.value?.tags,
+        tips:            analysis.value?.tips,
       }),
     })
     chat.reset()
