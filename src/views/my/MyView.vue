@@ -112,13 +112,13 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
                 <span class="my-list__text">교환 일기</span>
                 <span class="my-list__arrow"></span>
               </RouterLink>
-              <div class="my-list__item" @click="togglePush">
+              <button class="my-list__item" @click="togglePush">
                 <span class="my-list__icon my-list__icon--notice"></span>
                 <span class="my-list__text">푸시 알림</span>
                 <span class="my-toggle" :class="{ 'my-toggle--on': pushEnabled }">
                   <span class="my-toggle__thumb" />
                 </span>
-              </div>
+              </button>
             </div>
           </div>
 
