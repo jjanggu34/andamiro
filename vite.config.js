@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       manifest: {
         name: '안다미로',
         short_name: '안다미로',
@@ -38,6 +41,9 @@ export default defineConfig(({ mode }) => {
           { src: '/assets/img/pwa/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/assets/img/pwa/icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
+      },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),
   ],
