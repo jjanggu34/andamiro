@@ -33,16 +33,19 @@ async function checkPushStatus() {
 }
 
 async function togglePush() {
-  if (!auth.user?.id) return
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  if (!auth.user?.id) { alert('로그인 정보 없음'); return }
+  if (!('serviceWorker' in navigator)) { alert('서비스워커 미지원'); return }
+  if (!('PushManager' in window)) { alert('PushManager 미지원 — PWA로 설치 후 사용하세요'); return }
+  if (!('Notification' in window)) { alert('Notification 미지원'); return }
   if (pushEnabled.value) {
     await unsubscribe(auth.user.id)
     pushEnabled.value = false
   } else {
     if (Notification.permission === 'denied') {
-      alert('브라우저 설정에서 알림을 허용해 주세요.')
+      alert('알림이 차단되어 있습니다. 브라우저 설정에서 허용해 주세요.')
       return
     }
+    alert(`현재 권한: ${Notification.permission}`)
     await subscribe(auth.user.id)
     pushEnabled.value = Notification.permission === 'granted'
   }
