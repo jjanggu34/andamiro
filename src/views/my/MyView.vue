@@ -22,9 +22,14 @@ const pushEnabled = ref(false)
 
 async function checkPushStatus() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-  const reg = await navigator.serviceWorker.ready
-  const sub = await reg.pushManager.getSubscription()
-  pushEnabled.value = !!sub
+  if (Notification.permission !== 'granted') { pushEnabled.value = false; return }
+  try {
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    pushEnabled.value = !!sub
+  } catch {
+    pushEnabled.value = false
+  }
 }
 
 async function togglePush() {
