@@ -16,7 +16,10 @@ export function usePushSubscription() {
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return
 
-    const registration = await navigator.serviceWorker.ready
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000)),
+    ])
 
     const existing = await registration.pushManager.getSubscription()
     const subscription = existing ?? await registration.pushManager.subscribe({
