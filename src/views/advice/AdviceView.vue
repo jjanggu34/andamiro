@@ -36,13 +36,13 @@ function openCookie() {
   if (isAnimating.value || isOpened.value) return
   isAnimating.value = true
   setTimeout(() => {
-    cookieSrc.value = '/assets/img/advice/popup-img-fortune-cookie.png'
+    cookieSrc.value = '/assets/img/advice/popup-img-fortune.png'
     const msg = FORTUNES[Math.floor(Math.random() * FORTUNES.length)]
     setTimeout(() => {
       fortuneText.value = msg
       isOpened.value = true
       isAnimating.value = false
-    }, 280)
+    }, 800)
   }, 1200)
 }
 
@@ -129,7 +129,7 @@ onMounted(async () => {
             </div>
             <div class="card-item" v-if="adviceText">
               <h3>
-                <span></span>
+                <span class="icon01"></span>
                 AI 맞춤 조언
               </h3>
               <p class="advice-ai-body">{{ adviceText }}</p>
@@ -156,39 +156,91 @@ onMounted(async () => {
     </template>
   </PageLayout>
 
-  <ModalFull :show="showFortune" @close="closeFortune">
-    <div class="popup-fortune">
-      <h3 class="popup-fortune__tit">
-        <img src="/assets/img/advice/popup-fortune-tit.png" alt="오늘의 운세" />
-      </h3>
-      <div class="fortune-cookie-block">
-        <p class="fortune-subtitle">바삭한 쿠키속에 숨겨진 <strong>당신의 행운</strong>을 확인해보세요!</p>
-        <div class="fortune-glow" aria-hidden="true"></div>
-        <div
-          class="cookie-container"
-          role="button"
-          tabindex="0"
-          aria-label="포춘쿠키 열기"
-          @click="openCookie"
-          @keydown.enter.prevent="openCookie"
-          @keydown.space.prevent="openCookie"
-        >
-          <img
-            v-show="!isOpened"
-            :src="cookieSrc"
-            :class="['cookie-img', { shaking: isAnimating }]"
-            alt="포춘쿠키"
-          />
-          <p v-show="isOpened" class="fortune-text">{{ fortuneText }}</p>
+  <ModalFull :show="showFortune" modal-class="modal-fortune" body-class="body-fortune" @close="closeFortune">
+    <h3 class="popup-fortune__tit">
+      <img src="/assets/img/advice/popup-fortune-tit.png" alt="오늘의 운세" />
+    </h3>
+    <div class="fortune-cookie-block">
+      <p class="text">바삭한 쿠키속에 숨겨진 <strong>당신의 행운</strong>을 확인해보세요!</p>
+      <div class="fortune-glow" aria-hidden="true"></div>
+      <div
+        class="cookie-container"
+        role="button"
+        tabindex="0"
+        aria-label="포춘쿠키 열기"
+        @click="openCookie"
+        @keydown.enter.prevent="openCookie"
+        @keydown.space.prevent="openCookie"
+      >
+        <img
+          v-show="!isOpened"
+          :src="cookieSrc"
+          :class="['cookie-img', { shaking: isAnimating }]"
+          alt="포춘쿠키"
+        />
+        <p v-show="!isOpened" class="text box">
+          쿠키를 눌려 오늘의<br />운세를 확인하세요
+        </p>
+        <div v-show="isOpened" class="fortune-text">
+          <p>{{ fortuneText }}</p>
         </div>
       </div>
+
     </div>
   </ModalFull>
 </template>
 
-<style scoped lang="scss">
-.popup-fortune {
-  .popup-fortune__tit { display: block; width:100%; max-width:290px; margin:0 auto; }
+<style lang="scss">
+.advice-page {
+  main > section > .button-content { padding: 0; }
+  .card-item {
+    & {
+      --card-tips-bg:   #F2F9F3;
+      --card-tips-text: #7AC47D;
+      h3 {
+        span {
+          background-color:#fff;
+          &.icon01::before {
+            background: #74A37B;
+            mask-image: url("/public/assets/img/advice/ico-01.svg");
+            -webkit-mask-image: url("/public/assets/img/advice/ico-01.svg");
+            }
+      }
+        }
+    }
+
+    }
+
+
+
+ }
+.modal-fortune {
+  .modal-full__body {
+  padding: 70px 0 20px;
+  .popup-fortune__tit { display: block; width: 100%; max-width: 290px; margin: 0 auto; }
+  .fortune-cookie-block {
+    max-width: 375px; height: 500px; margin: 0 auto; background: url("/assets/img/advice/popup-bg-fortune.png") no-repeat center -100px / 100%;
+    .cookie-img { display:block; margin:0 auto; max-width:250px; width:90%;
+      &.shaking { animation: shake 0.15s ease-in-out infinite; }
+    }
+    p {
+      width:100%; text-align:center; margin:22px auto;
+      strong { color:$primary; }
+    }
+    .box {   max-width:307px; margin:0 auto; padding:20px; background:$white; border-radius:20px; box-shadow: 0 4px 4px 0 rgba(221, 221, 221, 0.20); }
+
+  }
+  .fortune-text {
+    display:flex; align-items:center; width:310px; height:210px; margin:0 auto; position:relative;
+    background:url("/public/assets/img/advice/popup-bg-fortune2.png") no-repeat center / 310px auto;
+    p { padding:0 20px; width:75%; font-size:$font18; color:$title; }
+   }
 }
-.fortune-cookie-block { max-width:375px; height:500px; margin:0 auto;  background:src("/public/assets/img/advice/popup-bg-fortune.png") no-repeat center top / 100%; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-6px) rotate(-2deg); }
+  75%       { transform: translateX(6px) rotate(2deg); }
+}
 </style>

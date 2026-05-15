@@ -27,9 +27,9 @@ const GAUGE_COLORS = {
 const record = ref(null)
 const loading = ref(true)
 
-function queryDate() {
-  const d = route.query.date
-  return Array.isArray(d) ? d[0] : d
+function queryId() {
+  const v = route.query.id ?? route.query.date
+  return Array.isArray(v) ? v[0] : v
 }
 
 function parseStored(raw, contentFallback) {
@@ -141,17 +141,17 @@ function animateScore(target) {
 }
 
 onMounted(async () => {
-  const date = queryDate()
-  if (!date || typeof date !== 'string') {
+  const id = queryId()
+  if (!id || typeof id !== 'string') {
     router.replace('/main')
     loading.value = false
     return
   }
   try {
-    // store 캐시 우선 → 없을 때만 API 호출
-    record.value =
-      diary.diaries.find(d => d.record_date === date) ??
-      await diary.getByDate(date)
+    const isUuid = /^[0-9a-f-]{36}$/i.test(id)
+    record.value = isUuid
+      ? (diary.diaries.find(d => d.id === id) ?? await diary.getById(id))
+      : (diary.diaries.find(d => d.record_date === id) ?? await diary.getByDate(id))
 
     if (!record.value) {
       router.replace('/main')

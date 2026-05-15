@@ -4,9 +4,10 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 const tabs = [
-  { to: '/main',   label: '홈',    icon: 'home'   },
-  { to: '/report', label: '리포트', icon: 'report' },
-  { to: '/advice', label: '조언',  icon: 'advice' },
+  { to: '/main',   label: '홈',      icon: 'home'   },
+  { to: '/report', label: '리포트',  icon: 'report' },
+  { to: '/advice', label: '조언',    icon: 'advice' },
+  { to: '/my',     label: '마이',    icon: 'my'     },
 ]
 </script>
 
@@ -32,14 +33,12 @@ const tabs = [
 .tabbar {
   flex: 0 0 auto;
   background: $white;
-  border-top: 1px solid $border;
-  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 .tabbar__inner {
   display: flex;
   justify-content: space-around;
-  padding: 8px 8px 0;
+  padding: 8px 0;
 }
 
 .tabbar__item {
@@ -82,4 +81,5 @@ const tabs = [
 .tabbar__icon[data-icon="home"]   { -webkit-mask-image: url('/assets/img/com/ico-home.png');   mask-image: url('/assets/img/com/ico-home.png'); }
 .tabbar__icon[data-icon="report"] { -webkit-mask-image: url('/assets/img/com/ico-report.png'); mask-image: url('/assets/img/com/ico-report.png'); }
 .tabbar__icon[data-icon="advice"] { -webkit-mask-image: url('/assets/img/com/ico-advice.svg'); mask-image: url('/assets/img/com/ico-advice.svg'); }
+.tabbar__icon[data-icon="my"]     { -webkit-mask-image: url('/assets/img/com/ico-my.svg');     mask-image: url('/assets/img/com/ico-my.svg'); }
 </style>

@@ -1,8 +1,10 @@
 <script setup>
 import { useSlots } from 'vue'
 defineProps({
-  show:  { type: Boolean, default: false },
-  title: { type: String,  default: ''   },
+  show:       { type: Boolean, default: false },
+  title:      { type: String,  default: ''   },
+  modalClass: { type: String,  default: ''   },
+  bodyClass:  { type: String,  default: ''   },
 })
 defineEmits(['close'])
 const slots = useSlots()
@@ -12,12 +14,12 @@ const slots = useSlots()
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="show" class="modal-overlay">
-        <div class="modal-full" role="dialog" aria-modal="true">
+        <div :class="['modal-full', modalClass]" role="dialog" aria-modal="true">
           <div class="modal-full__head">
             <h3 v-if="title" class="modal-full__title">{{ title }}</h3>
             <button class="modal-full__close" @click="$emit('close')">닫기</button>
           </div>
-          <div class="modal-full__body">
+          <div :class="['modal-full__body', bodyClass]">
             <slot />
           </div>
           <div v-if="slots.footer" class="modal-full__footer">
@@ -55,9 +57,9 @@ const slots = useSlots()
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--header-height);
+    height: 40px;
     padding: 0 20px;
-    border-bottom: 1px solid $border;
+    border-bottom: 0;
     flex-shrink: 0;
   }
 
@@ -68,12 +70,16 @@ const slots = useSlots()
   }
 
   &__close {
-    font-size: $font14;
+    font-size: 0;
     color: $text-sub;
     background: none;
     border: none;
     cursor: pointer;
     padding: 4px;
+    position: absolute;
+    right:10px;
+    width:40px; height:40px;
+    background:url("/public/assets/img/com/ico_close.svg") no-repeat center / 18px;
   }
 
   &__body {

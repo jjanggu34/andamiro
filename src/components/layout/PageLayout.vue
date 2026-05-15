@@ -7,6 +7,7 @@ const props = defineProps({
   actionLabel:{ type: String,  default: '' },
   bodyClass:  { type: String,  default: '' },
   hideHeader: { type: Boolean, default: false },
+  hideBack:   { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['action'])
@@ -22,9 +23,10 @@ function goBack() {
   <div class="wrap">
     <div v-if="!hideHeader" id="headerWrap">
       <header id="header" class="header">
-        <button class="header__back" @click="goBack" aria-label="뒤로">
+        <button v-if="!hideBack" class="header__back" @click="goBack" aria-label="뒤로">
           <span class="header__back-icon" />
         </button>
+        <span v-else class="header__back" />
 
         <h1 class="header__title">
           <span>{{ title }}</span>

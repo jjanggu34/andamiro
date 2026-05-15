@@ -4,8 +4,9 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from './auth'
 
 export const useExchangeStore = defineStore('exchange', () => {
-  const posts    = ref([])
-  const comments = ref([])
+  const posts          = ref([])
+  const comments       = ref([])
+  const myExchangeCount = ref(0)
 
   function userId() {
     return useAuthStore().user?.id
@@ -54,6 +55,16 @@ export const useExchangeStore = defineStore('exchange', () => {
         }
       })
       .sort((a, b) => new Date(b.last_activity) - new Date(a.last_activity))
+  }
+
+  async function fetchMyExchangeCount() {
+    const uid = userId()
+    if (!uid) return
+    const [ownRes, memberRes] = await Promise.all([
+      supabase.from('exchange_posts').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      supabase.from('exchange_members').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+    ])
+    myExchangeCount.value = (ownRes.count ?? 0) + (memberRes.count ?? 0)
   }
 
   async function getById(id) {
@@ -138,5 +149,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, fetchPosts, getById, save, joinRoom, fetchComments, addComment, deletePost }
+  return { posts, comments, myExchangeCount, fetchPosts, getById, save, joinRoom, fetchComments, addComment, deletePost, fetchMyExchangeCount }
 })
