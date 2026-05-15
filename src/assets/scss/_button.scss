@@ -1,0 +1,188 @@
+@use 'tokens' as *;
+
+header > button.back {
+  position: relative;
+  left: 0;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: $title;
+  mask-image: url("../img/svg/ico-prev.svg");
+  -webkit-mask-image: url("../img/svg/ico-prev.svg");
+  mask-repeat: no-repeat;
+  mask-size: 38px auto;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 38px auto;
+  -webkit-mask-position: center;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+  font-size: 0;
+}
+
+button:disabled {
+  background-color: $bg-disabled;
+  color: $text-disabled;
+}
+
+/*---------------------------------------------
+    버튼 베이스
+---------------------------------------------*/
+.btn-content {
+  width: 100%;
+}
+
+.btn-primary {
+  background-color: $primary;
+  color: $white;
+}
+
+.btn-line {
+  background-color: $white;
+  color: $text-default;
+  border: 1px solid $border;
+}
+
+.btn-text {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: $font16;
+  font-weight: $font-l;
+}
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 15px;
+  width: 100%;
+  height: 40px;
+  border-radius: $radius-md;
+  background-color: $white;
+  color: $primary;
+
+  &::after {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    background-color: $primary;
+    mask-image: url("/public/assets/img/com/ico-link.svg");
+    -webkit-mask-image: url("/public/assets/img/com/ico-link.svg");
+    mask-repeat: no-repeat;
+    mask-size: 18px auto;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 18px auto;
+    -webkit-mask-position: center;
+  }
+}
+
+.btn-sub {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 40px;
+  padding: 0 15px;
+  margin: 0;
+  border: 0;
+  border-radius: $radius-md;
+  background-color: #f0f1f6;
+  color: $text-default;
+  font-size: $font16;
+  font-weight: $font-l;
+  cursor: pointer;
+}
+
+.bvnt-link {
+  width: 100%;
+  height: 40px;
+  padding: 0 15px;
+  margin: 0;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  background-color: $white;
+  color: $text-default;
+  font-size: $font16;
+  font-weight: $font-l;
+  cursor: pointer;
+}
+
+/*---------------------------------------------
+    CTP 버튼 (하단 고정)
+---------------------------------------------*/
+.btn-ctp {
+  width: 100%;
+  height: 52px;
+  border-radius: $radius-md;
+  background-color: $primary;
+  color: $white;
+  font-size: $font18;
+  font-weight: $font-sb;
+}
+
+main + footer {
+  &.btn-ctp {
+    flex:0 0 92px;
+    padding: 20px;
+    height: auto;
+    border-radius: 0;
+  }
+
+  &.button-ctp .button-content button {
+    width: 100%;
+    height: 52px;
+    border-radius: $radius-md;
+    font-size: $font16;
+  }
+}
+
+// ── 버튼 두 개 나란히 ──
+.button-content--duo {
+  display: flex;
+  gap: 10px;
+
+  .btn-ctp { flex: 1; }
+
+  .btn-ctp--secondary {
+    flex: 0 0 auto;
+    background: $white;
+    color: $primary;
+    border:1px solid $primary;
+    font-size: $font16;
+    font-weight: $font-m;
+    width: auto !important;
+
+    &:disabled {
+      background: $bg-color;
+      color: $text-disabled;
+    }
+  }
+
+}
+
+/*---------------------------------------------
+    소셜 로그인
+---------------------------------------------*/
+.ico-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    background: url("/assets/img/login/ico-google.png") no-repeat center center / contain;
+  }
+}

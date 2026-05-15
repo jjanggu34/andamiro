@@ -1,0 +1,265 @@
+<script setup>
+import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import { useExchangeStore } from '@/stores/exchange'
+import { useAuthStore } from '@/stores/auth'
+
+const router   = useRouter()
+const exchange = useExchangeStore()
+const auth     = useAuthStore()
+
+const activeTab = ref('all')
+const tabs = [
+  { key: 'all',    label: '전체' },
+  { key: 'mine',   label: '내방' },
+  { key: 'shared', label: '공유방' },
+]
+
+watch(() => auth.user, async (u) => {
+  if (!u) return
+  await exchange.fetchPosts(activeTab.value)
+}, { immediate: true })
+
+watch(activeTab, (tab) => exchange.fetchPosts(tab))
+
+function goToPost(id) {
+  router.push(`/exchange/view/${id}`)
+}
+</script>
+
+<template>
+  <AppLayout title="교환일기">
+    <div class="exch-wrap">
+      <div class="exch-tabs">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="exch-tab"
+          :class="{ 'is-active': activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >{{ tab.label }}</button>
+      </div>
+
+      <ul class="exch-posts">
+        <li v-if="!exchange.posts.length" class="exch-empty">
+          아직 작성된 교환일기가 없어요.
+        </li>
+        <li
+          v-for="post in exchange.posts"
+          :key="post.id"
+          class="exch-item"
+          @click="goToPost(post.id)"
+        >
+          <img v-if="post.image_url" :src="post.image_url" class="exch-item__thumb" alt="" />
+          <div class="exch-item__body">
+            <div class="exch-item__title-row">
+              <strong class="exch-item__title">{{ post.title }}</strong>
+              <div class="exch-item__badges">
+                <span v-if="post.password" class="exch-item__lock">🔒</span>
+                <span v-if="post._role === 'member'" class="exch-item__badge">공유</span>
+              </div>
+            </div>
+
+            <!-- 최근 댓글 -->
+            <div v-if="post.latest_comment" class="exch-item__latest">
+              <span class="exch-item__latest-icon">💬</span>
+              <p class="exch-item__latest-text">{{ post.latest_comment }}</p>
+            </div>
+            <p v-else class="exch-item__content">{{ post.content }}</p>
+
+            <div class="exch-item__footer">
+              <span class="exch-item__comment-count">💬 {{ post.comment_count }}</span>
+              <span class="exch-item__date">{{ post.last_activity?.slice(0, 10) }}</span>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
+    </div>
+  </AppLayout>
+</template>
+
+<style scoped lang="scss">
+@use '@/assets/scss/tokens' as *;
+
+.exch-wrap {
+  position: relative;
+  padding: 0 20px 80px;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.exch-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 0 12px;
+  position: sticky;
+  top: 0;
+  background: $white;
+  z-index: 10;
+}
+
+.exch-tab {
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid $border;
+  font-size: $font14;
+  color: $text-sub;
+  cursor: pointer;
+  background: $white;
+  transition: all 0.15s;
+
+  &.is-active {
+    background: $primary;
+    border-color: $primary;
+    color: $white;
+    font-weight: $font-sb;
+  }
+}
+
+.exch-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.exch-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: $text-disabled;
+  font-size: $font14;
+}
+
+.exch-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+
+  &:active { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+  &__thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__title {
+    font-size: $font16;
+    font-weight: $font-sb;
+    color: $title;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  &__lock { font-size: 13px; }
+
+  &__badge {
+    font-size: 11px;
+    font-weight: $font-sb;
+    color: $primary;
+    background: rgba(66, 131, 243, 0.1);
+    padding: 2px 6px;
+    border-radius: 100px;
+  }
+
+  &__latest {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    background: $bg-color;
+    border-radius: 8px;
+    padding: 6px 10px;
+
+    &-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+
+    &-text {
+      font-size: $font13;
+      color: $text-default;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+  }
+
+  &__comment-count {
+    font-size: $font12;
+    color: $primary;
+    font-weight: $font-sb;
+  }
+
+  &__content {
+    font-size: $font13;
+    color: $text-sub;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__date {
+    font-size: $font12;
+    color: $text-disabled;
+    margin-top: auto;
+  }
+}
+
+.exch-fab {
+  position: fixed;
+  bottom: calc(#{$tabbar-height} + 20px);
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: $primary;
+  color: $white;
+  font-size: 28px;
+  line-height: 1;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(66, 131, 243, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

@@ -1,0 +1,59 @@
+import { fileURLToPath, URL } from 'node:url'
+import { defineConfig, loadEnv } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { VitePWA } from 'vite-plugin-pwa'
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+  server: {
+    proxy: {
+      '/api/chat': {
+        target: 'https://api.anthropic.com',
+        changeOrigin: true,
+        rewrite: () => '/v1/messages',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('x-api-key', env.ANTHROPIC_API_KEY ?? '')
+            proxyReq.setHeader('anthropic-version', '2023-06-01')
+            proxyReq.removeHeader('origin')
+          })
+        },
+      },
+    },
+  },
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: '안다미로',
+        short_name: '안다미로',
+        theme_color: '#4283f3',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          { src: '/assets/img/pwa/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/assets/img/pwa/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+      },
+    }),
+  ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: (content, filepath) => {
+          if (filepath.includes('_tokens.scss')) return content
+          return `@use 'sass:map';\n@use '${fileURLToPath(new URL('./src/assets/scss/tokens', import.meta.url))}' as *;\n${content}`
+        },
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  }
+})

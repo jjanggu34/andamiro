@@ -1,0 +1,28 @@
+@use 'tokens' as *;
+@use 'fonts';
+@use 'default';
+@use 'reset';
+@use 'layout';
+@use 'button';
+@use 'form';
+@use 'login';
+@use 'chat';
+@use 'report';
+@use 'advice';
+
+
+
+.main-page {
+  background:linear-gradient(180deg, #3b7eea 0%, #4283f3 38%, #fff 20%);
+
+  .main-hero{
+    padding:40px 0 20px;
+    background: url("../img/main/bg.png") no-repeat left bottom / 100%;
+    .text-content {
+      .text-group {
+        span { color: $white; font-size:$font20; }
+        em { color: $white; font-size:$font22; }
+      }
+    }
+  }
+}
