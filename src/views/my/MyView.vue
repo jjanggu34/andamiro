@@ -34,14 +34,17 @@ async function checkPushStatus() {
 
 async function togglePush() {
   if (!auth.user?.id) return
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
   if (pushEnabled.value) {
     await unsubscribe(auth.user.id)
     pushEnabled.value = false
   } else {
+    if (Notification.permission === 'denied') {
+      alert('브라우저 설정에서 알림을 허용해 주세요.')
+      return
+    }
     await subscribe(auth.user.id)
-    const reg = await navigator.serviceWorker.ready
-    const sub = await reg.pushManager.getSubscription()
-    pushEnabled.value = !!sub
+    pushEnabled.value = Notification.permission === 'granted'
   }
 }
 
