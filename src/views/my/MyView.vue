@@ -1,20 +1,44 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDiaryStore } from '@/stores/diary'
 import { useExchangeStore } from '@/stores/exchange'
+import { usePushSubscription } from '@/composables/usePushSubscription'
 
 const auth     = useAuthStore()
 const diary    = useDiaryStore()
 const exchange = useExchangeStore()
 const router   = useRouter()
+const { subscribe, unsubscribe } = usePushSubscription()
 
 const nickname = computed(() => auth.profile?.nickname ?? auth.user?.email?.split('@')[0] ?? '친구')
 const email    = computed(() => auth.user?.email ?? '')
 const initial  = computed(() => nickname.value.charAt(0).toUpperCase())
+
+const pushEnabled = ref(false)
+
+async function checkPushStatus() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  const reg = await navigator.serviceWorker.ready
+  const sub = await reg.pushManager.getSubscription()
+  pushEnabled.value = !!sub
+}
+
+async function togglePush() {
+  if (!auth.user?.id) return
+  if (pushEnabled.value) {
+    await unsubscribe(auth.user.id)
+    pushEnabled.value = false
+  } else {
+    await subscribe(auth.user.id)
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    pushEnabled.value = !!sub
+  }
+}
 
 async function handleSignOut() {
   await auth.signOut()
@@ -28,7 +52,7 @@ const menuItems = [
   { label: '약관 및 개인정보 처리방침', icon: 'doc'    },
 ]
 
-onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()]))
+onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount(), checkPushStatus()]))
 </script>
 
 <template>
@@ -83,6 +107,13 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
                 <span class="my-list__text">교환 일기</span>
                 <span class="my-list__arrow"></span>
               </RouterLink>
+              <div class="my-list__item" @click="togglePush">
+                <span class="my-list__icon my-list__icon--notice"></span>
+                <span class="my-list__text">푸시 알림</span>
+                <span class="my-toggle" :class="{ 'my-toggle--on': pushEnabled }">
+                  <span class="my-toggle__thumb" />
+                </span>
+              </div>
             </div>
           </div>
 
@@ -295,6 +326,37 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
   &__version {
     font-size: $font12;
     color: $text-sub;
+  }
+}
+
+/* ── 푸시 토글 ── */
+.my-toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: $border;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &--on {
+    background: var(--primary);
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+
+    .my-toggle--on & {
+      left: 23px;
+    }
   }
 }
 
