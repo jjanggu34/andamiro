@@ -7,9 +7,10 @@ export const useAuthStore = defineStore('auth', () => {
   const profile   = ref(null)
   const loading   = ref(true)
 
-  async function init() {
+  async function init(code = null) {
     if (!loading.value) return
     try {
+      if (code) await supabase.auth.exchangeCodeForSession(code)
       const { data } = await supabase.auth.getSession()
       user.value = data.session?.user ?? null
       if (user.value) await fetchProfile()

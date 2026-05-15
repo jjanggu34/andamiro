@@ -9,6 +9,12 @@ const router   = useRouter()
 const exchange = useExchangeStore()
 const auth     = useAuthStore()
 
+async function handleDelete(e, id) {
+  e.stopPropagation()
+  if (!confirm('방을 삭제하면 댓글도 모두 삭제됩니다. 삭제할까요?')) return
+  await exchange.deletePost(id)
+}
+
 const activeTab = ref('all')
 const tabs = [
   { key: 'all',    label: '전체' },
@@ -58,6 +64,7 @@ function goToPost(id) {
               <div class="exch-item__badges">
                 <span v-if="post.password" class="exch-item__lock">🔒</span>
                 <span v-if="post._role === 'member'" class="exch-item__badge">공유</span>
+                <button v-if="post._role === 'owner'" class="exch-item__delete" @click="handleDelete($event, post.id)">삭제</button>
               </div>
             </div>
 
@@ -186,6 +193,16 @@ function goToPost(id) {
   }
 
   &__lock { font-size: 13px; }
+
+  &__delete {
+    font-size: $font12;
+    color: $white;
+    background: #ff4d4f;
+    border: none;
+    border-radius: 100px;
+    padding: 2px 8px;
+    cursor: pointer;
+  }
 
   &__badge {
     font-size: 11px;

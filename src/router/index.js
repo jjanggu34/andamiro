@@ -51,7 +51,7 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (auth.loading) await auth.init()
+  if (auth.loading) await auth.init(to.query.code ?? null)
 
   // OAuth 콜백 code 파라미터 제거
   if (to.query.code) return { path: to.path, query: {} }

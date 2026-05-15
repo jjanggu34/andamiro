@@ -128,5 +128,15 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data
   }
 
-  return { posts, comments, fetchPosts, getById, save, joinRoom, fetchComments, addComment }
+  async function deletePost(id) {
+    const { error } = await supabase
+      .from('exchange_posts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId())
+    if (error) throw error
+    posts.value = posts.value.filter(p => p.id !== id)
+  }
+
+  return { posts, comments, fetchPosts, getById, save, joinRoom, fetchComments, addComment, deletePost }
 })
