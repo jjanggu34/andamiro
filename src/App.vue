@@ -1,17 +1,9 @@
 <script setup>
-import { ref, provide, watch } from 'vue'
+import { ref, provide } from 'vue'
 import ModalBottom from '@/components/layout/modalBottom.vue'
 import { useAuthStore } from '@/stores/auth'
-import { usePushSubscription } from '@/composables/usePushSubscription'
 
 const authStore = useAuthStore()
-const { subscribe } = usePushSubscription()
-
-watch(
-  () => authStore.user,
-  (u) => { if (u?.id) subscribe(u.id) },
-  { immediate: true }
-)
 
 const modalShow    = ref(false)
 const modalOptions = ref({})
