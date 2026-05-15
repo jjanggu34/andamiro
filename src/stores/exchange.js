@@ -108,6 +108,14 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   // 비밀번호로 공유방 입장 (RPC)
+  async function findPostByCode(code) {
+    return supabase
+      .from('exchange_posts')
+      .select('id')
+      .eq('password', code)
+      .single()
+  }
+
   async function joinRoom(postId, password) {
     const { data, error } = await supabase
       .rpc('join_exchange_room', { p_post_id: postId, p_password: password })
@@ -149,5 +157,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, fetchPosts, getById, save, joinRoom, fetchComments, addComment, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, fetchPosts, getById, save, findPostByCode, joinRoom, fetchComments, addComment, deletePost, fetchMyExchangeCount }
 })

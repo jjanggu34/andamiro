@@ -18,9 +18,16 @@ const password     = ref('')
 const saving       = ref(false)
 const error        = ref('')
 
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
 onMounted(() => {
-  content.value = history.state?.summary ?? ''
+  content.value  = history.state?.summary ?? ''
+  password.value = generateCode()
 })
+
 
 function onFileChange(e) {
   const file = e.target.files[0]
@@ -111,17 +118,21 @@ async function onSave() {
           />
         </div>
 
-        <!-- 비밀번호 -->
+        <!-- 초대코드 -->
         <div class="write-field">
-          <label class="write-label" for="write-password">비밀번호 <span class="write-label--opt">(선택)</span></label>
-          <input
-            id="write-password"
-            v-model="password"
-            class="write-input"
-            type="password"
-            placeholder="비밀번호로 방을 공유할 수 있어요"
-            maxlength="20"
-          />
+          <label class="write-label" for="write-password">초대코드</label>
+          <div class="write-code-row">
+            <input
+              id="write-password"
+              v-model="password"
+              class="write-input write-input--code"
+              type="text"
+              placeholder="초대코드"
+              maxlength="20"
+            />
+            <button type="button" class="write-code-btn" @click="password = generateCode()">재생성</button>
+          </div>
+          <p class="write-label--opt">이 코드를 공유하면 상대방이 방에 입장할 수 있어요</p>
         </div>
 
         <p v-if="error" class="write-error" role="alert">{{ error }}</p>
@@ -261,6 +272,32 @@ async function onSave() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.write-code-row {
+  display: flex;
+  gap: 8px;
+}
+
+.write-input--code {
+  flex: 1;
+  letter-spacing: 4px;
+  font-weight: $font-sb;
+  font-size: $font18;
+  text-align: center;
+}
+
+.write-code-btn {
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid $primary;
+  border-radius: 12px;
+  color: $primary;
+  font-size: $font14;
+  font-weight: $font-sb;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .write-error {

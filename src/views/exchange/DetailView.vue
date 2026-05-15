@@ -25,6 +25,12 @@ onMounted(async () => {
   loading.value = false
 })
 
+function copyCode() {
+  if (!post.value?.password) return
+  navigator.clipboard.writeText(post.value.password)
+  alert(`초대코드 복사됨: ${post.value.password}`)
+}
+
 async function submitComment() {
   const text = commentText.value.trim()
   if (!text) return
@@ -55,6 +61,9 @@ async function submitComment() {
             <h2 class="detail-post__title">{{ post.title }}</h2>
             <span class="detail-post__date">{{ post.created_at?.slice(0, 10) }}</span>
             <p class="detail-post__content">{{ post.content }}</p>
+            <button v-if="post.user_id === myId && post.password" class="detail-invite-btn" @click="copyCode">
+              초대코드 복사 · {{ post.password }}
+            </button>
           </section>
 
           <!-- 댓글 목록 -->
@@ -100,6 +109,21 @@ async function submitComment() {
 
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
+
+.detail-invite-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1.5px dashed var(--primary);
+  border-radius: 12px;
+  background: rgba(66, 131, 243, 0.05);
+  color: var(--primary);
+  font-size: $font14;
+  font-weight: $font-sb;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-align: center;
+}
 
 .detail-loading {
   display: flex;

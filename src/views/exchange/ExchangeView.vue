@@ -15,12 +15,29 @@ async function handleDelete(e, id) {
   await exchange.deletePost(id)
 }
 
-const activeTab = ref('all')
+const activeTab  = ref('all')
 const tabs = [
   { key: 'all',    label: '전체' },
   { key: 'mine',   label: '내방' },
   { key: 'shared', label: '공유방' },
 ]
+
+const showCodeInput = ref(false)
+const codeInput     = ref('')
+const codeError     = ref('')
+
+async function joinByCode() {
+  const code = codeInput.value.trim().toUpperCase()
+  if (!code) return
+  codeError.value = ''
+  const { data } = await exchange.findPostByCode(code)
+  if (!data) { codeError.value = '유효하지 않은 초대코드예요.'; return }
+  const ok = await exchange.joinRoom(data.id, code)
+  if (!ok) { codeError.value = '입장에 실패했어요.'; return }
+  showCodeInput.value = false
+  codeInput.value     = ''
+  router.push(`/exchange/view/${data.id}`)
+}
 
 watch(() => auth.user, async (u) => {
   if (!u) return
@@ -83,7 +100,24 @@ function goToPost(id) {
         </li>
       </ul>
 
-      <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
+      <!-- 초대코드 입장 패널 -->
+      <div v-if="showCodeInput" class="exch-code-panel">
+        <input
+          v-model="codeInput"
+          class="exch-code-input"
+          type="text"
+          placeholder="초대코드 6자리 입력"
+          maxlength="20"
+          @keydown.enter="joinByCode"
+        />
+        <button class="exch-code-confirm" @click="joinByCode">입장</button>
+        <p v-if="codeError" class="exch-code-error">{{ codeError }}</p>
+      </div>
+
+      <div class="exch-fabs">
+        <button class="exch-fab exch-fab--code" @click="showCodeInput = !showCodeInput">🔑</button>
+        <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -261,10 +295,17 @@ function goToPost(id) {
   }
 }
 
-.exch-fab {
+.exch-fabs {
   position: fixed;
   bottom: calc(#{$tabbar-height} + 20px);
   right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.exch-fab {
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -278,5 +319,58 @@ function goToPost(id) {
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &--code {
+    font-size: 20px;
+    background: $white;
+    border: 1.5px solid $primary;
+    color: $primary;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+}
+
+.exch-code-panel {
+  position: fixed;
+  bottom: calc(#{$tabbar-height} + 140px);
+  right: 20px;
+  background: $white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 16px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+
+.exch-code-input {
+  height: 44px;
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: $font16;
+  letter-spacing: 3px;
+  font-weight: $font-sb;
+  text-transform: uppercase;
+  outline: none;
+  &:focus { border-color: $primary; }
+}
+
+.exch-code-confirm {
+  height: 44px;
+  background: $primary;
+  color: $white;
+  border: none;
+  border-radius: 10px;
+  font-size: $font14;
+  font-weight: $font-sb;
+  cursor: pointer;
+}
+
+.exch-code-error {
+  font-size: $font13;
+  color: #dc2626;
+  text-align: center;
 }
 </style>
