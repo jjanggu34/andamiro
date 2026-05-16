@@ -54,10 +54,13 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (auth.loading) await auth.init(to.query.code ?? null)
+  // /exchange/join 의 ?code 는 초대코드이므로 OAuth 코드로 쓰지 않음
+  const isExchangeJoin = to.path === '/exchange/join'
+  const oauthCode = isExchangeJoin ? null : (to.query.code ?? null)
+  if (auth.loading) await auth.init(oauthCode)
 
-  // OAuth 콜백 code 파라미터 제거
-  if (to.query.code) return { path: to.path, query: {} }
+  // OAuth 콜백 code 파라미터 제거 (초대 경로 제외)
+  if (to.query.code && !isExchangeJoin) return { path: to.path, query: {} }
 
   const joinPaths = ['/join/1', '/join/2', '/join/3', '/join/4']
 

@@ -25,18 +25,26 @@ const tabs = [
 const showCodeInput = ref(false)
 const codeInput     = ref('')
 const codeError     = ref('')
+const codeJoining   = ref(false)
 
 async function joinByCode() {
   const code = codeInput.value.trim().toUpperCase()
-  if (!code) return
-  codeError.value = ''
-  const { data } = await exchange.findPostByCode(code)
-  if (!data) { codeError.value = '유효하지 않은 초대코드예요.'; return }
-  const ok = await exchange.joinRoom(data.id, code)
-  if (!ok) { codeError.value = '입장에 실패했어요.'; return }
-  showCodeInput.value = false
-  codeInput.value     = ''
-  router.push(`/exchange/view/${data.id}`)
+  if (!code || codeJoining.value) return
+  codeError.value  = ''
+  codeJoining.value = true
+  try {
+    const { data } = await exchange.findPostByCode(code)
+    if (!data) { codeError.value = '유효하지 않은 초대코드예요.'; return }
+    const ok = await exchange.joinRoom(data.id, code)
+    if (!ok) { codeError.value = '입장에 실패했어요.'; return }
+    showCodeInput.value = false
+    codeInput.value     = ''
+    router.push(`/exchange/view/${data.id}`)
+  } catch {
+    codeError.value = '입장 중 오류가 발생했어요.'
+  } finally {
+    codeJoining.value = false
+  }
 }
 
 watch(() => auth.user, async (u) => {
@@ -110,7 +118,9 @@ function goToPost(id) {
           maxlength="20"
           @keydown.enter="joinByCode"
         />
-        <button class="exch-code-confirm" @click="joinByCode">입장</button>
+        <button class="exch-code-confirm" :disabled="codeJoining" @click="joinByCode">
+          {{ codeJoining ? '입장 중…' : '입장' }}
+        </button>
         <p v-if="codeError" class="exch-code-error">{{ codeError }}</p>
       </div>
 
@@ -366,6 +376,8 @@ function goToPost(id) {
   font-size: $font14;
   font-weight: $font-sb;
   cursor: pointer;
+
+  &:disabled { opacity: 0.6; cursor: default; }
 }
 
 .exch-code-error {
