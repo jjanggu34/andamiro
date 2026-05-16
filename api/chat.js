@@ -1,7 +1,8 @@
-import jwt from 'jsonwebtoken'
-
 const MODEL      = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 512
+
+const SUPABASE_URL     = process.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_KEY
 
 const ALLOWED_ORIGINS = [
   process.env.ALLOWED_ORIGIN,
@@ -21,15 +22,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(204).end(); return }
   if (req.method !== 'POST')    { res.status(405).json({ error: 'Method Not Allowed' }); return }
 
-  // JWT 검증
+  // Supabase로 토큰 검증
   const token = (req.headers.authorization ?? '').replace('Bearer ', '').trim()
   if (!token) { res.status(401).json({ error: 'Unauthorized' }); return }
 
-  try {
-    jwt.verify(token, process.env.SUPABASE_JWT_SECRET)
-  } catch {
-    res.status(401).json({ error: 'Unauthorized' }); return
-  }
+  const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'apikey': SUPABASE_ANON_KEY,
+    },
+  })
+  if (!authRes.ok) { res.status(401).json({ error: 'Unauthorized' }); return }
 
   // Anthropic API 키 확인
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -53,9 +56,9 @@ export default async function handler(req, res) {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type':    'application/json',
+        'Content-Type':      'application/json',
         'anthropic-version': '2023-06-01',
-        'x-api-key':       apiKey,
+        'x-api-key':         apiKey,
       },
       body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, system, messages }),
     })
