@@ -49,8 +49,9 @@ async function togglePush() {
     pushEnabled.value = true
     try {
       await subscribe(auth.user.id)
-    } catch {
+    } catch (e) {
       pushEnabled.value = false
+      alert(e?.message || '알림 설정에 실패했어요.')
     }
   }
 }
