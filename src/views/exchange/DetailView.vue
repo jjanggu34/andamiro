@@ -16,7 +16,8 @@ const sending     = ref(false)
 const loading     = ref(true)
 const error       = ref('')
 
-const myId = auth.user?.id
+const myId       = auth.user?.id
+const showInvite = ref(false)
 
 onMounted(async () => {
   const id = route.params.id
@@ -25,11 +26,18 @@ onMounted(async () => {
   loading.value = false
 })
 
-function copyInviteLink() {
+function inviteLink() {
+  return `${location.origin}/exchange/join?code=${post.value?.password}`
+}
+
+async function copyInviteLink() {
   if (!post.value?.password) return
-  const link = `${location.origin}/exchange/join?code=${post.value.password}`
-  navigator.clipboard.writeText(link)
-  alert('초대 링크가 복사되었어요!')
+  try {
+    await navigator.clipboard.writeText(inviteLink())
+    alert('초대 링크가 복사되었어요!')
+  } catch {
+    showInvite.value = true
+  }
 }
 
 async function submitComment() {
@@ -65,6 +73,10 @@ async function submitComment() {
             <button v-if="post.user_id === myId && post.password" class="detail-invite-btn" @click="copyInviteLink">
               초대 링크 복사
             </button>
+            <div v-if="showInvite && post.password" class="detail-invite-box">
+              <p class="detail-invite-box__label">아래 링크를 직접 복사하세요</p>
+              <p class="detail-invite-box__link">{{ inviteLink() }}</p>
+            </div>
           </section>
 
           <!-- 댓글 목록 -->
@@ -110,6 +122,27 @@ async function submitComment() {
 
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
+
+.detail-invite-box {
+  margin-top: 8px;
+  padding: 12px;
+  background: $bg-color;
+  border-radius: 12px;
+
+  &__label {
+    font-size: $font12;
+    color: $text-sub;
+    margin-bottom: 6px;
+  }
+
+  &__link {
+    font-size: $font12;
+    color: $primary;
+    word-break: break-all;
+    line-height: 1.5;
+    user-select: all;
+  }
+}
 
 .detail-invite-btn {
   margin-top: 12px;
