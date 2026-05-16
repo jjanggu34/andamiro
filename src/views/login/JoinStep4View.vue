@@ -18,7 +18,13 @@ async function complete() {
     await join.saveProfile()
     await auth.fetchProfile()
     join.reset()
-    router.push('/main')
+    const pendingId = sessionStorage.getItem('pendingJoin')
+    if (pendingId) {
+      sessionStorage.removeItem('pendingJoin')
+      router.push(`/exchange/join?id=${pendingId}`)
+    } else {
+      router.push('/main')
+    }
   } catch {
     error.value = '저장에 실패했습니다. 다시 시도해주세요.'
   } finally {
