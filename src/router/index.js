@@ -38,6 +38,9 @@ const router = createRouter({
       path: '/exchange/view/:id', name: 'exchange-view',  component: () => import('@/views/exchange/DetailView.vue'),   meta: { requiresAuth: true },
     },
     {
+      path: '/exchange/join',     name: 'exchange-join',  component: () => import('@/views/exchange/JoinView.vue'),
+    },
+    {
       path: '/exchange/room',     name: 'room',           component: () => import('@/views/exchange/RoomView.vue'),     meta: { requiresAuth: true },
     },
     {
@@ -68,8 +71,15 @@ router.beforeEach(async (to) => {
     // 신규 유저 → join 플로우로
     if (isNew && !joinPaths.includes(to.path)) return '/join/1'
 
-    // 기존 유저 → 로그인/join 페이지 접근 차단
-    if (!isNew && (to.path === '/' || to.path === '/login' || joinPaths.includes(to.path))) return '/main'
+    // 기존 유저 → 로그인/스플래시 접근 시 pendingJoin 확인 후 리다이렉트
+    if (!isNew && (to.path === '/' || to.path === '/login' || joinPaths.includes(to.path))) {
+      const pendingCode = sessionStorage.getItem('pendingJoin')
+      if (pendingCode) {
+        sessionStorage.removeItem('pendingJoin')
+        return `/exchange/join?code=${pendingCode}`
+      }
+      return '/main'
+    }
   }
 })
 

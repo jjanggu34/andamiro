@@ -25,10 +25,11 @@ onMounted(async () => {
   loading.value = false
 })
 
-function copyCode() {
+function copyInviteLink() {
   if (!post.value?.password) return
-  navigator.clipboard.writeText(post.value.password)
-  alert(`초대코드 복사됨: ${post.value.password}`)
+  const link = `${location.origin}/exchange/join?code=${post.value.password}`
+  navigator.clipboard.writeText(link)
+  alert('초대 링크가 복사되었어요!')
 }
 
 async function submitComment() {
@@ -61,8 +62,8 @@ async function submitComment() {
             <h2 class="detail-post__title">{{ post.title }}</h2>
             <span class="detail-post__date">{{ post.created_at?.slice(0, 10) }}</span>
             <p class="detail-post__content">{{ post.content }}</p>
-            <button v-if="post.user_id === myId && post.password" class="detail-invite-btn" @click="copyCode">
-              초대코드 복사 · {{ post.password }}
+            <button v-if="post.user_id === myId && post.password" class="detail-invite-btn" @click="copyInviteLink">
+              초대 링크 복사
             </button>
           </section>
 
