@@ -176,12 +176,10 @@ async function handleImageFile(e) {
     if (!raw) return
     const result = await downscaleImage(raw)
     pendingImage.value = result
-    // 이미지 말풍선 즉시 표시
     chat.addMessage('user', '', result.dataUrl)
     showIntro.value = false
-    // AI 안내 메시지 (API 호출 없이 로컬)
-    chat.addMessage('assistant', '사진을 첨부했어요 📸 사진에 대해 하고 싶은 말을 같이 입력해 주세요.')
     scrollToBottom()
+    await callAI()
   }
   reader.readAsDataURL(file)
 }

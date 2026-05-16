@@ -27,24 +27,26 @@ export function useChatAgent() {
       .filter(m => (m.role === 'user' || m.role === 'assistant') && m.text)
       .map(m => ({ role: m.role, content: m.text }))
 
-    // 마지막 user 메시지에 이미지 주입
+    // 마지막 user 메시지에 이미지 주입 (텍스트 없이 사진만 보낸 경우 기본 프롬프트 사용)
     if (pendingImage?.base64) {
-      const lastIdx = apiMessages.findLastIndex(m => m.role === 'user')
-      if (lastIdx >= 0) {
-        apiMessages[lastIdx] = {
-          role: 'user',
-          content: [
-            { type: 'text', text: apiMessages[lastIdx].content },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: pendingImage.mediaType,
-                data: pendingImage.base64,
-              },
+      let lastIdx = apiMessages.findLastIndex(m => m.role === 'user')
+      if (lastIdx < 0) {
+        apiMessages.push({ role: 'user', content: '이 사진을 보고 이야기해줘' })
+        lastIdx = 0
+      }
+      apiMessages[lastIdx] = {
+        role: 'user',
+        content: [
+          { type: 'text', text: apiMessages[lastIdx].content || '이 사진을 보고 이야기해줘' },
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: pendingImage.mediaType,
+              data: pendingImage.base64,
             },
-          ],
-        }
+          },
+        ],
       }
     }
 
