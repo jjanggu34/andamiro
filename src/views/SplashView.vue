@@ -1,12 +1,15 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const auth   = useAuthStore()
 let timer = null
 
 onMounted(() => {
-  timer = setTimeout(() => router.replace('/login'), 2000)
+  // 이미 로그인 상태면 바로 메인으로
+  timer = setTimeout(() => router.replace(auth.user ? '/main' : '/login'), 1500)
 })
 
 onUnmounted(() => {

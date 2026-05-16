@@ -9,36 +9,33 @@ const route    = useRoute()
 const auth     = useAuthStore()
 const exchange = useExchangeStore()
 
-const code    = route.query.code ?? ''
+const postId  = route.query.id ?? ''
 const post    = ref(null)
+const code    = ref('')
 const joining = ref(false)
 const error   = ref('')
 
 onMounted(async () => {
-  if (!code) { error.value = '유효하지 않은 초대 링크예요.'; return }
+  if (!postId) { error.value = '유효하지 않은 초대 링크예요.'; return }
 
   if (!auth.user) {
-    sessionStorage.setItem('pendingJoin', code)
+    sessionStorage.setItem('pendingJoin', postId)
     router.replace('/login')
     return
   }
 
-  await loadPost()
+  const data = await exchange.getPostForJoin(postId)
+  if (!data) { error.value = '존재하지 않는 방이에요.'; return }
+  post.value = data
 })
 
-async function loadPost() {
-  const { data } = await exchange.findPostByCode(code)
-  if (!data) { error.value = '존재하지 않는 초대코드예요.'; return }
-  post.value = data
-}
-
 async function join() {
-  if (!post.value) return
+  if (!post.value || !code.value.trim()) return
   joining.value = true
   error.value   = ''
   try {
-    const ok = await exchange.joinRoom(post.value.id, code)
-    if (ok === false) { error.value = '입장에 실패했어요.'; return }
+    const ok = await exchange.joinRoom(post.value.id, code.value.trim().toUpperCase())
+    if (ok === false) { error.value = '초대코드가 올바르지 않아요.'; return }
     router.replace(`/exchange/view/${post.value.id}`)
   } catch {
     error.value = '입장 중 오류가 발생했어요.'
@@ -61,7 +58,20 @@ async function join() {
         <img v-if="post.image_url" :src="post.image_url" class="join-img" alt="" />
         <h2 class="join-title">{{ post.title }}</h2>
         <p class="join-desc">{{ post.content }}</p>
-        <button class="join-btn" :disabled="joining" @click="join">
+
+        <div class="join-code-wrap">
+          <label class="join-code-label">초대코드 입력</label>
+          <input
+            v-model="code"
+            class="join-code-input"
+            type="text"
+            placeholder="초대코드 입력"
+            maxlength="20"
+            @keydown.enter="join"
+          />
+        </div>
+
+        <button class="join-btn" :disabled="joining || !code.trim()" @click="join">
           {{ joining ? '입장 중…' : '방 입장하기' }}
         </button>
       </template>
@@ -132,6 +142,36 @@ async function join() {
   overflow: hidden;
 }
 
+.join-code-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.join-code-label {
+  font-size: $font13;
+  font-weight: $font-sb;
+  color: $title;
+}
+
+.join-code-input {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid $border;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: $font16;
+  letter-spacing: 3px;
+  font-weight: $font-sb;
+  text-transform: uppercase;
+  outline: none;
+  box-sizing: border-box;
+
+  &:focus { border-color: $primary; }
+  &::placeholder { letter-spacing: 0; font-weight: $font-l; }
+}
+
 .join-btn {
   width: 100%;
   height: 52px;
@@ -142,9 +182,9 @@ async function join() {
   font-size: $font16;
   font-weight: $font-sb;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 4px;
 
-  &:disabled { opacity: 0.6; cursor: default; }
+  &:disabled { opacity: 0.45; cursor: default; }
 }
 
 .join-loading,

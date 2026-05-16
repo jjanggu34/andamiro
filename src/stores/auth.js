@@ -9,9 +9,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function init(code = null) {
     if (!loading.value) return
+    // 5초 안에 응답 없으면 비로그인 처리
+    const timeout = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 5000))
     try {
-      if (code) await supabase.auth.exchangeCodeForSession(code)
-      const { data } = await supabase.auth.getSession()
+      if (code) await Promise.race([supabase.auth.exchangeCodeForSession(code), timeout])
+      const { data } = await Promise.race([supabase.auth.getSession(), timeout])
       user.value = data.session?.user ?? null
       if (user.value) await fetchProfile()
     } catch {

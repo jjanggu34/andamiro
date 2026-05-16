@@ -54,7 +54,7 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  // /exchange/join 의 ?code 는 초대코드이므로 OAuth 코드로 쓰지 않음
+  // /exchange/join 의 파라미터는 OAuth 코드와 무관
   const isExchangeJoin = to.path === '/exchange/join'
   const oauthCode = isExchangeJoin ? null : (to.query.code ?? null)
   if (auth.loading) await auth.init(oauthCode)
@@ -76,10 +76,10 @@ router.beforeEach(async (to) => {
 
     // 기존 유저 → 로그인/스플래시 접근 시 pendingJoin 확인 후 리다이렉트
     if (!isNew && (to.path === '/' || to.path === '/login' || joinPaths.includes(to.path))) {
-      const pendingCode = sessionStorage.getItem('pendingJoin')
-      if (pendingCode) {
+      const pendingId = sessionStorage.getItem('pendingJoin')
+      if (pendingId) {
         sessionStorage.removeItem('pendingJoin')
-        return `/exchange/join?code=${pendingCode}`
+        return `/exchange/join?id=${pendingId}`
       }
       return '/main'
     }

@@ -107,6 +107,15 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data
   }
 
+  async function getPostForJoin(id) {
+    const { data } = await supabase
+      .from('exchange_posts')
+      .select('id, title, content, image_url, user_id')
+      .eq('id', id)
+      .single()
+    return data ?? null
+  }
+
   // 비밀번호로 공유방 입장 (RPC)
   async function findPostByCode(code) {
     return supabase
@@ -147,6 +156,46 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data
   }
 
+  async function sendCommentPush(postId, postOwnerId, postTitle) {
+    const uid = userId()
+    if (!uid) return
+
+    // 나를 제외한 방 참여자 수집 (방장 + 멤버)
+    const recipientIds = []
+    if (postOwnerId !== uid) recipientIds.push(postOwnerId)
+
+    const { data: members } = await supabase
+      .from('exchange_members')
+      .select('user_id')
+      .eq('post_id', postId)
+      .neq('user_id', uid)
+    if (members) recipientIds.push(...members.map(m => m.user_id))
+    if (!recipientIds.length) return
+
+    const { data: subs } = await supabase
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth')
+      .in('user_id', recipientIds)
+    if (!subs?.length) return
+
+    const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push-notification`
+    const key     = import.meta.env.VITE_SUPABASE_KEY
+    await Promise.allSettled(
+      subs.map(sub =>
+        fetch(edgeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+          body: JSON.stringify({
+            subscription: { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            title: '교환일기',
+            body: `새 댓글이 달렸어요: ${postTitle}`,
+            url: `/exchange/view/${postId}`,
+          }),
+        })
+      )
+    )
+  }
+
   async function deletePost(id) {
     const { error } = await supabase
       .from('exchange_posts')
@@ -157,5 +206,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, fetchPosts, getById, save, findPostByCode, joinRoom, fetchComments, addComment, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, fetchPosts, getById, getPostForJoin, save, findPostByCode, joinRoom, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
 })
