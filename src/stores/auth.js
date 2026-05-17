@@ -23,8 +23,8 @@ export const useAuthStore = defineStore('auth', () => {
         const codeTimeout = new Promise(resolve => setTimeout(resolve, 15000))
         await Promise.race([supabase.auth.exchangeCodeForSession(code), codeTimeout])
       }
-      // getSession은 localStorage 읽기라 즉시 반환 — 타임아웃 불필요
-      const { data } = await supabase.auth.getSession()
+      // 일부 브라우저/PWA 환경에서는 세션 복구가 지연될 수 있어 초기 진입을 오래 막지 않는다.
+      const { data } = await withTimeout(supabase.auth.getSession(), 5000)
       user.value = data.session?.user ?? null
       if (user.value) {
         // 프로필 조회가 오래 걸려도 앱 전체를 스플래시에 묶어두지 않는다.
