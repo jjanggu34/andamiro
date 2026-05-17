@@ -38,6 +38,9 @@ export function usePushSubscription() {
 
     const registration = await getRegistration()
 
+    if (!VAPID_PUBLIC_KEY)
+      throw new Error('푸시 키가 설정되지 않았어요. 관리자에게 문의해 주세요.')
+
     const existing = await registration.pushManager.getSubscription()
     const subscription = existing ?? await registration.pushManager.subscribe({
       userVisibleOnly: true,
