@@ -1,17 +1,14 @@
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+// vite-plugin-pwa 필수 참조 (프리캐싱 미사용 - 즉시 활성화 위해)
+void self.__WB_MANIFEST
 
-self.addEventListener('install',  () => self.skipWaiting())
+self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
-
-precacheAndRoute(self.__WB_MANIFEST)
-cleanupOutdatedCaches()
 
 self.addEventListener('push', (event) => {
   if (!event.data) return
   const { title, body, url } = event.data.json()
   event.waitUntil(
     (async () => {
-      // 앱이 열려 있으면 인앱 토스트용 메시지 전달
       const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
       allClients.forEach(c => c.postMessage({ type: 'PUSH', title, body, url }))
 
