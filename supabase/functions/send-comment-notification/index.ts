@@ -107,22 +107,43 @@ serve(async (req) => {
 
   const { data: subscriptions, error: subscriptionsError } = await admin
     .from('push_subscriptions')
-    .select('endpoint, p256dh, auth')
+    .select('user_id, endpoint, p256dh, auth')
     .in('user_id', [...recipientIds])
   if (subscriptionsError) return json({ error: subscriptionsError.message }, 500)
   if (!subscriptions?.length) return json({ delivered: 0, recipients: recipientIds.size })
 
   const pushResults = await Promise.allSettled(
-    subscriptions.map((subscription) => sendPush(subscription, post))
+    subscriptions.map(async (subscription) => {
+      await sendPush(subscription, post)
+      return { user_id: subscription.user_id, endpoint: subscription.endpoint }
+    })
   )
 
-  const delivered = pushResults.filter((result) => result.status === 'fulfilled').length
-  const failed = pushResults.length - delivered
-  const errors = pushResults.flatMap((result) =>
-    result.status === 'rejected'
-      ? [result.reason instanceof Error ? result.reason.message : String(result.reason)]
-      : []
-  )
+  const subscriptionResults = subscriptions.map((subscription, index) => {
+    const result = pushResults[index]
+    return result.status === 'fulfilled'
+      ? { user_id: subscription.user_id, endpoint: subscription.endpoint, ok: true as const }
+      : {
+          user_id: subscription.user_id,
+          endpoint: subscription.endpoint,
+          ok: false as const,
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        }
+  })
+
+  const recipientResults = [...recipientIds].map((userId) => {
+    const userSubscriptions = subscriptionResults.filter((result) => result.user_id === userId)
+    return {
+      user_id: userId,
+      delivered: userSubscriptions.some((result) => result.ok),
+      subscription_count: userSubscriptions.length,
+      errors: userSubscriptions.flatMap((result) => result.ok ? [] : [result.error]),
+    }
+  })
+
+  const delivered = recipientResults.filter((result) => result.delivered).length
+  const failed = recipientResults.length - delivered
+  const errors = subscriptionResults.flatMap((result) => result.ok ? [] : [result.error])
 
   const expiredEndpoints = errors.flatMap((error) => {
     const [code, status, endpoint] = error.split(':')
@@ -132,5 +153,14 @@ serve(async (req) => {
     await admin.from('push_subscriptions').delete().in('endpoint', expiredEndpoints)
   }
 
-  return json({ delivered, failed, recipients: recipientIds.size, errors })
+  return json({
+    delivered,
+    failed,
+    recipients: recipientIds.size,
+    details: {
+      subscriptions: subscriptionResults,
+      recipients: recipientResults,
+      errors,
+    },
+  })
 })
