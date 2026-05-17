@@ -78,7 +78,9 @@ async function submitComment() {
     await exchange.addComment(route.params.id, text)
     commentText.value = ''
     // 푸시 알림 — 실패해도 사용자에게 영향 없음
-    exchange.sendCommentPush(post.value.id).catch(() => {})
+    exchange.sendCommentPush(post.value.id)
+      .then((result) => console.info('comment notification result', result))
+      .catch((err) => console.error('comment notification failed', err))
   } catch (e) {
     error.value = e?.message || '댓글 등록에 실패했어요.'
   } finally {

@@ -259,7 +259,9 @@ export const useExchangeStore = defineStore('exchange', () => {
       },
       body: JSON.stringify({ post_id: postId }),
     })
-    if (!res.ok) throw new Error('댓글 알림 발송에 실패했어요.')
+    const body = await res.json().catch(() => null)
+    if (!res.ok) throw new Error(body?.error || '댓글 알림 발송에 실패했어요.')
+    return body
   }
 
   async function deletePost(id) {
