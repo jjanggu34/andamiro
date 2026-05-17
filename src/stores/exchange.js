@@ -246,44 +246,20 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data
   }
 
-  async function sendCommentPush(postId, postOwnerId, postTitle) {
-    const uid = userId()
-    if (!uid) return
+  async function sendCommentPush(postId) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return
 
-    // 나를 제외한 방 참여자 수집 (방장 + 멤버)
-    const recipientIds = []
-    if (postOwnerId !== uid) recipientIds.push(postOwnerId)
-
-    const { data: members } = await supabase
-      .from('exchange_members')
-      .select('user_id')
-      .eq('post_id', postId)
-      .neq('user_id', uid)
-    if (members) recipientIds.push(...members.map(m => m.user_id))
-    if (!recipientIds.length) return
-
-    const { data: subs } = await supabase
-      .from('push_subscriptions')
-      .select('endpoint, p256dh, auth')
-      .in('user_id', recipientIds)
-    if (!subs?.length) return
-
-    const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push-notification`
-    const key     = import.meta.env.VITE_SUPABASE_KEY
-    await Promise.allSettled(
-      subs.map(sub =>
-        fetch(edgeUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-          body: JSON.stringify({
-            subscription: { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            title: '교환일기',
-            body: `새 댓글이 달렸어요: ${postTitle}`,
-            url: `/exchange/view/${postId}`,
-          }),
-        })
-      )
-    )
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-comment-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ post_id: postId }),
+    })
+    if (!res.ok) throw new Error('댓글 알림 발송에 실패했어요.')
   }
 
   async function deletePost(id) {
