@@ -35,11 +35,19 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const target = event.notification.data?.url ?? '/exchange'
+  const targetUrl = new URL(target, self.location.origin).href
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      const existing = list.find((c) => c.url.includes(target))
-      if (existing) return existing.focus()
-      return clients.openWindow(target)
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
+      const exact = list.find((client) => client.url === targetUrl)
+      if (exact) return exact.focus()
+
+      const existing = list[0]
+      if (existing) {
+        await existing.navigate(targetUrl)
+        return existing.focus()
+      }
+
+      return clients.openWindow(targetUrl)
     })
   )
 })
