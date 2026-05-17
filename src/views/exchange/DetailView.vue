@@ -81,7 +81,8 @@ async function submitComment() {
     exchange.sendCommentPush(post.value.id)
       .then((result) => {
         console.info('comment notification result', result)
-        alert(`알림 결과\n수신자 ${result?.recipients ?? 0}명\n성공 ${result?.delivered ?? 0}건\n실패 ${result?.failed ?? 0}건`)
+        const detail = result?.errors?.length ? `\n오류 ${result.errors.join(', ')}` : ''
+        alert(`알림 결과\n수신자 ${result?.recipients ?? 0}명\n성공 ${result?.delivered ?? 0}건\n실패 ${result?.failed ?? 0}건${detail}`)
       })
       .catch((err) => {
         console.error('comment notification failed', err)

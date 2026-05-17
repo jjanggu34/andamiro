@@ -106,5 +106,10 @@ serve(async (req) => {
 
   const delivered = pushResults.filter((result) => result.status === 'fulfilled').length
   const failed = pushResults.length - delivered
-  return json({ delivered, failed, recipients: recipientIds.size })
+  const errors = pushResults.flatMap((result) =>
+    result.status === 'rejected'
+      ? [result.reason instanceof Error ? result.reason.message : String(result.reason)]
+      : []
+  )
+  return json({ delivered, failed, recipients: recipientIds.size, errors })
 })
