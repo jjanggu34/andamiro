@@ -12,6 +12,10 @@ self.addEventListener('push', (event) => {
       const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true })
       allClients.forEach(c => c.postMessage({ type: 'PUSH', title, body, url }))
 
+      if ('setAppBadge' in navigator) {
+        await navigator.setAppBadge()
+      }
+
       await self.registration.showNotification(title ?? '안다미로', {
         body: body ?? '',
         icon: '/assets/img/pwa/icon-192.png',

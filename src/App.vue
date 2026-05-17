@@ -55,11 +55,26 @@ function onSwMessage(e) {
   if (e.data?.type === 'PUSH') showToast(e.data)
 }
 
+async function clearBadge() {
+  if ('clearAppBadge' in navigator) {
+    try { await navigator.clearAppBadge() } catch { /* ignore */ }
+  }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') clearBadge()
+}
+
 onMounted(() => {
+  clearBadge()
+  window.addEventListener('focus', clearBadge)
+  document.addEventListener('visibilitychange', onVisibilityChange)
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.addEventListener('message', onSwMessage)
 })
 onBeforeUnmount(() => {
+  window.removeEventListener('focus', clearBadge)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.removeEventListener('message', onSwMessage)
 })
