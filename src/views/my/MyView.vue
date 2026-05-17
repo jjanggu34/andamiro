@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
@@ -8,10 +8,11 @@ import { useDiaryStore } from '@/stores/diary'
 import { useExchangeStore } from '@/stores/exchange'
 import { usePushSubscription } from '@/composables/usePushSubscription'
 
-const auth     = useAuthStore()
-const diary    = useDiaryStore()
-const exchange = useExchangeStore()
-const router   = useRouter()
+const auth      = useAuthStore()
+const diary     = useDiaryStore()
+const exchange  = useExchangeStore()
+const router    = useRouter()
+const openModal = inject('openModal')
 const { subscribe, unsubscribe } = usePushSubscription()
 
 const nickname = computed(() => auth.profile?.nickname ?? auth.user?.email?.split('@')[0] ?? '친구')
@@ -35,7 +36,7 @@ async function checkPushStatus() {
 async function togglePush() {
   if (!auth.user?.id) return
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('이 브라우저는 푸시 알림을 지원하지 않아요.')
+    openModal({ icon: '🔔', title: '지원하지 않는 환경', description: '이 브라우저는 푸시 알림을 지원하지 않아요.' })
     return
   }
   if (pushEnabled.value) {
@@ -43,7 +44,11 @@ async function togglePush() {
     pushEnabled.value = false
   } else {
     if (Notification.permission === 'denied') {
-      alert('알림이 차단되어 있습니다. 브라우저 설정에서 허용해 주세요.')
+      openModal({
+        icon: '🔔',
+        title: '알림이 차단되어 있어요',
+        description: '브라우저 주소창 옆 🔒 아이콘 → 사이트 설정 → 알림 → 허용으로 바꾼 뒤 다시 시도해 주세요.',
+      })
       return
     }
     pushEnabled.value = true
@@ -51,7 +56,7 @@ async function togglePush() {
       await subscribe(auth.user.id)
     } catch (e) {
       pushEnabled.value = false
-      alert(e?.message || '알림 설정에 실패했어요.')
+      openModal({ icon: '🔔', title: '알림 설정 실패', description: e?.message || '알림 설정에 실패했어요.' })
     }
   }
 }
