@@ -4,6 +4,13 @@ const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
 const VAPID_PUBLIC_KEY  = Deno.env.get('VITE_VAPID_PUBLIC_KEY')!
 const VAPID_SUBJECT     = 'mailto:wnsxkai@gmail.com'
 
+function fromBase64Url(value: string): Uint8Array {
+  return Uint8Array.from(
+    atob(value.replace(/-/g, '+').replace(/_/g, '/')),
+    (char) => char.charCodeAt(0)
+  )
+}
+
 // VAPID JWT 서명 (ES256)
 async function signVapidJwt(audience: string): Promise<string> {
   const header  = { alg: 'ES256', typ: 'JWT' }
@@ -17,10 +24,21 @@ async function signVapidJwt(audience: string): Promise<string> {
 
   const signingInput = `${encode(header)}.${encode(payload)}`
 
-  const rawKey = Uint8Array.from(atob(VAPID_PRIVATE_KEY.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+  const publicKey = fromBase64Url(VAPID_PUBLIC_KEY)
+  const privateKey = fromBase64Url(VAPID_PRIVATE_KEY)
+  if (publicKey.length !== 65 || publicKey[0] !== 4 || privateKey.length !== 32)
+    throw new Error('Invalid VAPID key material')
+
   const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    rawKey,
+    'jwk',
+    {
+      kty: 'EC',
+      crv: 'P-256',
+      x: toBase64Url(publicKey.slice(1, 33)),
+      y: toBase64Url(publicKey.slice(33, 65)),
+      d: toBase64Url(privateKey),
+      ext: true,
+    },
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
@@ -41,8 +59,8 @@ async function encryptPayload(
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
   plaintext: string
 ): Promise<{ ciphertext: Uint8Array; salt: Uint8Array; serverPublicKey: Uint8Array }> {
-  const p256dh = Uint8Array.from(atob(subscription.keys.p256dh.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
-  const auth   = Uint8Array.from(atob(subscription.keys.auth.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+  const p256dh = fromBase64Url(subscription.keys.p256dh)
+  const auth   = fromBase64Url(subscription.keys.auth)
 
   // 서버 ECDH 키쌍 생성
   const serverKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])
@@ -126,7 +144,7 @@ serve(async (req) => {
 
   const vapidHeader = [
     `vapid t=${jwt}`,
-    `k=${toBase64Url(Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))}`,
+    `k=${toBase64Url(fromBase64Url(VAPID_PUBLIC_KEY))}`,
   ].join(',')
 
   const res = await fetch(subscription.endpoint, {
@@ -136,7 +154,7 @@ serve(async (req) => {
       'Content-Encoding': 'aesgcm',
       'Encryption':       `salt=${toBase64Url(salt)}`,
       'Crypto-Key':       `dh=${toBase64Url(serverPublicKey)}; ${vapidHeader}`,
-      'Authorization':    `vapid t=${jwt}, k=${toBase64Url(Uint8Array.from(atob(VAPID_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)))}`,
+      'Authorization':    `vapid t=${jwt}, k=${toBase64Url(fromBase64Url(VAPID_PUBLIC_KEY))}`,
       'TTL':              '86400',
     },
     body: ciphertext,
