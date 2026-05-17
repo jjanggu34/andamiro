@@ -44,11 +44,14 @@ async function togglePush() {
     pushEnabled.value = false
   } else {
     if (Notification.permission === 'denied') {
-      openModal({
-        icon: '🔔',
-        title: '알림이 차단되어 있어요',
-        description: '브라우저 주소창 옆 🔒 아이콘 → 사이트 설정 → 알림 → 허용으로 바꾼 뒤 다시 시도해 주세요.',
-      })
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      const isIOS = /iPhone|iPad/i.test(navigator.userAgent)
+      const desc = isStandalone
+        ? isIOS
+          ? 'iOS 설정 앱 → 안다미로 → 알림 → 허용으로 바꾼 뒤 앱을 다시 열어주세요.'
+          : '홈 화면 앱 아이콘을 길게 누르기 → 앱 정보 → 권한 → 알림 → 허용으로 바꾼 뒤 앱을 다시 열어주세요.'
+        : '주소창 옆 🔒 아이콘 → 사이트 설정 → 알림 → 허용으로 바꾼 뒤 다시 시도해 주세요.'
+      openModal({ icon: '🔔', title: '알림이 차단되어 있어요', description: desc })
       return
     }
     pushEnabled.value = true
