@@ -36,6 +36,8 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const target = event.notification.data?.url ?? '/exchange'
   const targetUrl = new URL(target, self.location.origin).href
+  const launchUrl = new URL('/', self.location.origin)
+  launchUrl.searchParams.set('notificationTarget', target)
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
       const exact = list.find((client) => client.url === targetUrl)
@@ -47,7 +49,7 @@ self.addEventListener('notificationclick', (event) => {
         return existing.focus()
       }
 
-      return clients.openWindow(targetUrl)
+      return clients.openWindow(launchUrl.href)
     })
   )
 })
