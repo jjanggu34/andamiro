@@ -9,7 +9,12 @@ import router from './router'
 
 const app = createApp(App)
 
-registerSW({ immediate: true })
+registerSW({
+  immediate: true,
+  onRegisteredSW(_, registration) {
+    registration?.update()
+  },
+})
 
 app.use(createPinia())
 app.use(router)

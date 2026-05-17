@@ -2,7 +2,13 @@
 void self.__WB_MANIFEST
 
 self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
+self.addEventListener('activate', (e) => e.waitUntil(
+  (async () => {
+    await self.clients.claim()
+    const keys = await caches.keys()
+    await Promise.all(keys.map((key) => caches.delete(key)))
+  })()
+))
 
 self.addEventListener('push', (event) => {
   if (!event.data) return
