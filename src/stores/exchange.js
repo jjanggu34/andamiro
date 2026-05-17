@@ -16,42 +16,37 @@ export const useExchangeStore = defineStore('exchange', () => {
     const uid = userId()
     if (!uid) return
 
+    const needOwn    = filter === 'all' || filter === 'mine'
+    const needMember = filter === 'all' || filter === 'shared'
+
+    const [ownRes, memberRes] = await Promise.all([
+      needOwn
+        ? supabase.from('exchange_posts').select('*, exchange_comments(content, created_at)').eq('user_id', uid)
+        : Promise.resolve({ data: null }),
+      needMember
+        ? supabase.from('exchange_members').select('post:exchange_posts(*, exchange_comments(content, created_at)), joined_at').eq('user_id', uid)
+        : Promise.resolve({ data: null }),
+    ])
+
     let result = []
-
-    // 내방: 내가 방장인 방 (댓글 포함)
-    if (filter === 'all' || filter === 'mine') {
-      const { data } = await supabase
-        .from('exchange_posts')
-        .select('*, exchange_comments(content, created_at)')
-        .eq('user_id', uid)
-      if (data) result.push(...data.map(p => ({ ...p, _role: 'owner' })))
+    if (ownRes.data)    result.push(...ownRes.data.map(p => ({ ...p, _role: 'owner' })))
+    if (memberRes.data) {
+      result.push(
+        ...memberRes.data
+          .filter(m => m.post)
+          .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
+      )
     }
 
-    // 공유: 내가 초대받은 방 (댓글 포함)
-    if (filter === 'all' || filter === 'shared') {
-      const { data } = await supabase
-        .from('exchange_members')
-        .select('post:exchange_posts(*, exchange_comments(content, created_at)), joined_at')
-        .eq('user_id', uid)
-      if (data) {
-        result.push(
-          ...data
-            .filter(m => m.post)
-            .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
-        )
-      }
-    }
-
-    // 댓글 통계 계산 후 최근 활동순 정렬
     posts.value = result
       .map(p => {
-        const coms = p.exchange_comments ?? []
+        const coms   = p.exchange_comments ?? []
         const sorted = [...coms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         return {
           ...p,
-          comment_count:   coms.length,
-          latest_comment:  sorted[0]?.content ?? null,
-          last_activity:   sorted[0]?.created_at ?? p.created_at,
+          comment_count:  coms.length,
+          latest_comment: sorted[0]?.content ?? null,
+          last_activity:  sorted[0]?.created_at ?? p.created_at,
         }
       })
       .sort((a, b) => new Date(b.last_activity) - new Date(a.last_activity))
@@ -104,6 +99,17 @@ export const useExchangeStore = defineStore('exchange', () => {
       .single()
 
     if (error) throw error
+
+    // 낙관적 업데이트: 목록에 즉시 추가
+    posts.value.unshift({
+      ...data,
+      _role:          'owner',
+      comment_count:  0,
+      latest_comment: null,
+      last_activity:  data.created_at,
+      exchange_comments: [],
+    })
+
     return data
   }
 

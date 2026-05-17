@@ -29,7 +29,29 @@ onMounted(() => {
 })
 
 
-function onFileChange(e) {
+function compressImage(file, maxPx = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      if (width > maxPx || height > maxPx) {
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx }
+        else                { width  = Math.round(width  * maxPx / height); height = maxPx }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width  = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      canvas.toBlob(blob => resolve(blob ?? file), 'image/jpeg', quality)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
+async function onFileChange(e) {
   const file = e.target.files[0]
   if (!file) return
   if (!ALLOWED_TYPES.includes(file.type)) {
@@ -38,8 +60,9 @@ function onFileChange(e) {
     return
   }
   error.value = ''
-  imageFile.value    = file
   imagePreview.value = URL.createObjectURL(file)
+  // GIF는 압축 생략 (애니메이션 보존)
+  imageFile.value = file.type === 'image/gif' ? file : await compressImage(file)
 }
 
 function removeImage() {
