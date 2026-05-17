@@ -82,8 +82,8 @@ async function submitComment() {
       .then((result) => {
         console.info('comment notification result', result)
         const errors = result?.details?.errors ?? []
-        const detail = errors.length ? `\n상세 오류 ${errors.join(', ')}` : ''
-        alert(`알림 결과\n수신자 ${result?.recipients ?? 0}명\n성공 ${result?.delivered ?? 0}명\n실패 ${result?.failed ?? 0}명${detail}`)
+        if (errors.length) console.warn('comment notification details', errors)
+        alert(`알림 결과\n수신자 ${result?.recipients ?? 0}명\n성공 ${result?.delivered ?? 0}명\n실패 ${result?.failed ?? 0}명`)
       })
       .catch((err) => {
         console.error('comment notification failed', err)
