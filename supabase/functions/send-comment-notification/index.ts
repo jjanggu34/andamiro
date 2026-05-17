@@ -156,7 +156,7 @@ async function sendPush(
     },
     body: ciphertext,
   })
-  if (!res.ok) throw new Error(`push_failed:${res.status}`)
+  if (!res.ok) throw new Error(`push_failed:${res.status}:${subscription.endpoint}`)
 }
 
 serve(async (req) => {
@@ -231,5 +231,14 @@ serve(async (req) => {
       ? [result.reason instanceof Error ? result.reason.message : String(result.reason)]
       : []
   )
+
+  const expiredEndpoints = errors.flatMap((error) => {
+    const [code, status, endpoint] = error.split(':')
+    return code === 'push_failed' && (status === '404' || status === '410') && endpoint ? [endpoint] : []
+  })
+  if (expiredEndpoints.length) {
+    await admin.from('push_subscriptions').delete().in('endpoint', expiredEndpoints)
+  }
+
   return json({ delivered, failed, recipients: recipientIds.size, errors })
 })
