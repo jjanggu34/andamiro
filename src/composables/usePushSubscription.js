@@ -9,6 +9,24 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)))
 }
 
+async function getRegistration() {
+  // SW가 이미 이 페이지를 컨트롤 중이면 즉시 반환
+  if (navigator.serviceWorker.controller) {
+    const reg = await navigator.serviceWorker.getRegistration('/')
+    if (reg) return reg
+  }
+  // 아직 활성화 안 된 경우 최대 20초 대기
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error('서비스워커 준비 시간이 초과됐어요. 앱을 완전히 닫았다가 다시 열어주세요.')),
+        20000
+      )
+    ),
+  ])
+}
+
 export function usePushSubscription() {
   async function subscribe(userId) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window))
@@ -18,13 +36,7 @@ export function usePushSubscription() {
     if (permission !== 'granted')
       throw new Error('알림 권한이 거부되었어요. 브라우저 설정에서 허용해 주세요.')
 
-    // 타임아웃을 15초로 늘리고 실패 시 명확한 메시지 제공
-    const registration = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('서비스워커 준비 시간이 초과됐어요. 페이지를 새로고침 후 다시 시도해 주세요.')), 15000)
-      ),
-    ])
+    const registration = await getRegistration()
 
     const existing = await registration.pushManager.getSubscription()
     const subscription = existing ?? await registration.pushManager.subscribe({
@@ -44,8 +56,9 @@ export function usePushSubscription() {
   async function unsubscribe(userId) {
     if (!('serviceWorker' in navigator)) return
 
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.getSubscription()
+    const reg = await navigator.serviceWorker.getRegistration('/')
+    if (!reg) return
+    const subscription = await reg.pushManager.getSubscription()
     if (!subscription) return
 
     await subscription.unsubscribe()
