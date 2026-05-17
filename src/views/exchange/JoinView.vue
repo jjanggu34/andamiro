@@ -42,8 +42,8 @@ async function join() {
     const ok = await exchange.joinRoom(post.value.id, code.value.trim().toUpperCase())
     if (ok === false) { error.value = '초대코드가 올바르지 않아요.'; return }
     router.replace(`/exchange/view/${post.value.id}`)
-  } catch {
-    error.value = '입장 중 오류가 발생했어요.'
+  } catch (e) {
+    error.value = e?.message || '입장 중 오류가 발생했어요.'
   } finally {
     joining.value = false
   }
@@ -66,11 +66,6 @@ async function join() {
         <p v-if="error" class="join-error">{{ error }}</p>
       </template>
 
-      <template v-else-if="error">
-        <p class="join-error">{{ error }}</p>
-        <button class="join-btn" @click="router.replace('/exchange')">교환일기로 돌아가기</button>
-      </template>
-
       <template v-else-if="post">
         <p class="join-label">교환일기 초대</p>
         <img v-if="post.image_url" :src="post.image_url" class="join-img" alt="" />
@@ -89,9 +84,16 @@ async function join() {
           />
         </div>
 
+        <p v-if="error" class="join-error">{{ error }}</p>
+
         <button class="join-btn" :disabled="joining || !code.trim()" @click="join">
           {{ joining ? '입장 중…' : '방 입장하기' }}
         </button>
+      </template>
+
+      <template v-else-if="error">
+        <p class="join-error">{{ error }}</p>
+        <button class="join-btn" @click="router.replace('/exchange')">교환일기로 돌아가기</button>
       </template>
 
       <template v-else>

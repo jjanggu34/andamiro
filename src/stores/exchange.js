@@ -116,7 +116,6 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data ?? null
   }
 
-  // 비밀번호로 공유방 입장 (RPC)
   async function findPostByCode(code) {
     return supabase
       .from('exchange_posts')
@@ -126,10 +125,31 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function joinRoom(postId, password) {
-    const { data, error } = await supabase
-      .rpc('join_exchange_room', { p_post_id: postId, p_password: password })
-    if (error) throw error
-    return data  // true: 성공, false: 비밀번호 불일치
+    const uid = userId()
+    if (!uid) throw new Error('not_authenticated')
+
+    // 비밀번호 확인
+    const { data: post, error: fetchErr } = await supabase
+      .from('exchange_posts')
+      .select('id, password, user_id')
+      .eq('id', postId)
+      .single()
+    if (fetchErr || !post) throw new Error('방을 찾을 수 없어요.')
+
+    const storedPw = (post.password ?? '').trim().toUpperCase()
+    const inputPw  = (password ?? '').trim().toUpperCase()
+    if (storedPw !== inputPw) return false  // 비밀번호 불일치
+
+    // 방장이면 입장 처리 없이 바로 성공
+    if (post.user_id === uid) return true
+
+    // exchange_members에 추가 (이미 있으면 무시)
+    const { error: insertErr } = await supabase
+      .from('exchange_members')
+      .upsert({ post_id: postId, user_id: uid }, { onConflict: 'post_id,user_id' })
+    if (insertErr) throw insertErr
+
+    return true
   }
 
   async function fetchComments(postId) {
