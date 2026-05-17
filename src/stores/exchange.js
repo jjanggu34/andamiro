@@ -75,7 +75,7 @@ export const useExchangeStore = defineStore('exchange', () => {
     const uid = userId()
     if (!uid) throw new Error('not_authenticated')
 
-    const { title, content, imageFile, password } = payload
+    const { title, content, imageFile, password, clientRequestId } = payload
     let image_url = null
 
     if (imageFile) {
@@ -92,34 +92,87 @@ export const useExchangeStore = defineStore('exchange', () => {
       }
     }
 
-    const { data, error } = await supabase
-      .from('exchange_posts')
-      .insert({ user_id: uid, title, content, image_url, password: password || null })
-      .select()
-      .single()
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) throw new Error('로그인이 필요해요.')
 
-    if (error) throw error
+    const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-exchange-room`
+    const res = await fetch(edgeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title,
+        content,
+        image_url,
+        password: password || null,
+        client_request_id: clientRequestId,
+      }),
+    })
+    const body = await res.json()
+    if (!res.ok) throw new Error(body?.error || '방 생성에 실패했어요.')
+    const data = { ...body.room, invitation_token: body.invitation_token }
 
     // 낙관적 업데이트: 목록에 즉시 추가
-    posts.value.unshift({
-      ...data,
-      _role:          'owner',
-      comment_count:  0,
-      latest_comment: null,
-      last_activity:  data.created_at,
-      exchange_comments: [],
-    })
+    if (!posts.value.some(p => p.id === data.id)) {
+      posts.value.unshift({
+        ...data,
+        _role:          'owner',
+        comment_count:  0,
+        latest_comment: null,
+        last_activity:  data.created_at,
+        exchange_comments: [],
+      })
+    }
 
     return data
   }
 
-  async function getPostForJoin(id) {
-    const { data } = await supabase
-      .from('exchange_posts')
-      .select('id, title, content, image_url, user_id')
-      .eq('id', id)
-      .single()
-    return data ?? null
+  async function getInvitation(postId) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) throw new Error('로그인이 필요해요.')
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-exchange-invitation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ post_id: postId }),
+    })
+    const body = await res.json()
+    if (!res.ok) throw new Error(body?.error || '초대 정보를 불러오지 못했어요.')
+    return body.invitation
+  }
+
+  async function regenerateInvitationCode(postId) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) throw new Error('로그인이 필요해요.')
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-exchange-invite-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ post_id: postId }),
+    })
+    const body = await res.json()
+    if (!res.ok) throw new Error(body?.error || '초대코드를 바꾸지 못했어요.')
+    return body.code
+  }
+
+  async function getInvitationPreview(token) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const accessToken = session?.access_token
+    if (!accessToken) throw new Error('로그인이 필요해요.')
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-exchange-invitation-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ token }),
+    })
+    const body = await res.json()
+    if (!res.ok) return null
+    return body.invitation ?? null
   }
 
   async function findPostByCode(code) {
@@ -134,7 +187,6 @@ export const useExchangeStore = defineStore('exchange', () => {
     const uid = userId()
     if (!uid) throw new Error('not_authenticated')
 
-    // 비밀번호 확인
     const { data: post, error: fetchErr } = await supabase
       .from('exchange_posts')
       .select('id, password, user_id')
@@ -144,18 +196,30 @@ export const useExchangeStore = defineStore('exchange', () => {
 
     const storedPw = (post.password ?? '').trim().toUpperCase()
     const inputPw  = (password ?? '').trim().toUpperCase()
-    if (storedPw !== inputPw) return false  // 비밀번호 불일치
-
-    // 방장이면 입장 처리 없이 바로 성공
+    if (storedPw !== inputPw) return false
     if (post.user_id === uid) return true
 
-    // exchange_members에 추가 (이미 있으면 무시)
     const { error: insertErr } = await supabase
       .from('exchange_members')
       .upsert({ post_id: postId, user_id: uid }, { onConflict: 'post_id,user_id' })
     if (insertErr) throw insertErr
-
     return true
+  }
+
+  async function acceptInvitation(tokenValue, password) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const accessToken = session?.access_token
+    if (!accessToken) throw new Error('로그인이 필요해요.')
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-exchange-invitation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ token: tokenValue, password }),
+    })
+    const body = await res.json()
+    if (res.status === 403 && body?.error === 'invalid_password') return false
+    if (!res.ok) throw new Error(body?.error || '입장 중 오류가 발생했어요.')
+    return body.post_id
   }
 
   async function fetchComments(postId) {
@@ -232,5 +296,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, fetchPosts, getById, getPostForJoin, save, findPostByCode, joinRoom, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, findPostByCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
 })

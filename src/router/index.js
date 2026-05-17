@@ -84,7 +84,7 @@ router.beforeEach(async (to) => {
       const pendingId = sessionStorage.getItem('pendingJoin')
       if (pendingId) {
         sessionStorage.removeItem('pendingJoin')
-        return `/exchange/join?id=${pendingId}`
+        return `/exchange/join?token=${pendingId}`
       }
       return '/main'
     }

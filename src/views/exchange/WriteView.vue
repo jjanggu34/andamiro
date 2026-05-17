@@ -17,6 +17,7 @@ const content      = ref('')
 const password     = ref('')
 const saving       = ref(false)
 const error        = ref('')
+const clientRequestId = ref(crypto.randomUUID())
 
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -82,6 +83,7 @@ async function onSave() {
       content:   content.value.trim(),
       imageFile: imageFile.value,
       password:  password.value.trim() || null,
+      clientRequestId: clientRequestId.value,
     })
     router.replace('/exchange')
   } catch (e) {

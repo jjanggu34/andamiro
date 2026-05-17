@@ -15,6 +15,8 @@ const commentText = ref('')
 const sending     = ref(false)
 const loading     = ref(true)
 const error       = ref('')
+const invitation  = ref(null)
+const codeBusy    = ref(false)
 
 const myId       = auth.user?.id
 const showInvite = ref(false)
@@ -22,16 +24,17 @@ const showInvite = ref(false)
 onMounted(async () => {
   const id = route.params.id
   post.value = await exchange.getById(id)
+  if (post.value?.user_id === myId) invitation.value = await exchange.getInvitation(id)
   await exchange.fetchComments(id)
   loading.value = false
 })
 
 function inviteLink() {
-  return `${location.origin}/exchange/join?id=${post.value?.id}`
+  return `${location.origin}/exchange/join?token=${invitation.value?.token}`
 }
 
 async function copyInviteLink() {
-  if (!post.value?.password) return
+  if (!post.value?.password || !invitation.value?.token) return
   try {
     await navigator.clipboard.writeText(inviteLink())
     alert('초대 링크가 복사되었어요!')
@@ -40,9 +43,35 @@ async function copyInviteLink() {
   }
 }
 
+async function copyInviteCode() {
+  if (!invitation.value?.code) return
+  try {
+    await navigator.clipboard.writeText(invitation.value.code)
+    alert('초대코드가 복사되었어요!')
+  } catch {
+    alert(`초대코드: ${invitation.value.code}`)
+  }
+}
+
+async function regenerateCode() {
+  if (!post.value?.id || codeBusy.value) return
+  if (!confirm('새 초대코드를 만들면 이전 코드는 더 이상 사용할 수 없어요. 계속할까요?')) return
+  codeBusy.value = true
+  try {
+    invitation.value = {
+      ...invitation.value,
+      code: await exchange.regenerateInvitationCode(post.value.id),
+    }
+  } catch (e) {
+    alert(e?.message || '초대코드를 바꾸지 못했어요.')
+  } finally {
+    codeBusy.value = false
+  }
+}
+
 async function submitComment() {
   const text = commentText.value.trim()
-  if (!text) return
+  if (!text || sending.value) return
   sending.value = true
   error.value   = ''
   try {
@@ -72,10 +101,20 @@ async function submitComment() {
             <h2 class="detail-post__title">{{ post.title }}</h2>
             <span class="detail-post__date">{{ post.created_at?.slice(0, 10) }}</span>
             <p class="detail-post__content">{{ post.content }}</p>
-            <button v-if="post.user_id === myId && post.password" class="detail-invite-btn" @click="copyInviteLink">
+            <button v-if="post.user_id === myId && post.password && invitation?.token" class="detail-invite-btn" @click="copyInviteLink">
               초대 링크 복사
             </button>
-            <div v-if="showInvite && post.password" class="detail-invite-box">
+            <div v-if="post.user_id === myId && invitation?.code" class="detail-code-box">
+              <p class="detail-code-box__label">초대코드</p>
+              <div class="detail-code-box__row">
+                <strong class="detail-code-box__value">{{ invitation.code }}</strong>
+                <button type="button" @click="copyInviteCode">복사</button>
+                <button type="button" :disabled="codeBusy" @click="regenerateCode">
+                  {{ codeBusy ? '변경 중' : '재생성' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="showInvite && post.password && invitation?.token" class="detail-invite-box">
               <p class="detail-invite-box__label">아래 링크를 직접 복사하세요</p>
               <p class="detail-invite-box__link">{{ inviteLink() }}</p>
             </div>
@@ -108,6 +147,7 @@ async function submitComment() {
             class="detail-input"
             placeholder="댓글을 입력해 주세요"
             rows="1"
+            :disabled="sending"
             @keydown.enter.prevent="submitComment"
           />
           <button class="detail-send" :disabled="sending || !commentText.trim()" @click="submitComment">
@@ -159,6 +199,46 @@ async function submitComment() {
   letter-spacing: 2px;
   cursor: pointer;
   text-align: center;
+}
+
+.detail-code-box {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: $white;
+  border: 1px solid $border;
+
+  &__label {
+    font-size: $font12;
+    color: $text-sub;
+    margin-bottom: 8px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__value {
+    flex: 1;
+    font-size: $font18;
+    letter-spacing: 2px;
+    color: $title;
+  }
+
+  button {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: $bg-color;
+    color: $text-default;
+    font-size: $font13;
+
+    &:disabled {
+      color: $text-disabled;
+    }
+  }
 }
 
 .detail-loading {

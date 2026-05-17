@@ -21,7 +21,7 @@ async function complete() {
     const pendingId = sessionStorage.getItem('pendingJoin')
     if (pendingId) {
       sessionStorage.removeItem('pendingJoin')
-      router.push(`/exchange/join?id=${pendingId}`)
+      router.push(`/exchange/join?token=${pendingId}`)
     } else {
       router.push('/main')
     }

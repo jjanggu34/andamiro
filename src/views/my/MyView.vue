@@ -42,6 +42,11 @@ async function togglePush() {
   if (pushEnabled.value) {
     await unsubscribe(auth.user.id)
     pushEnabled.value = false
+    openModal({
+      icon: '🔔',
+      title: '알림이 해제되었어요',
+      description: '이제 푸시 알림을 받지 않아요.',
+    })
   } else {
     if (Notification.permission === 'denied') {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches
@@ -57,6 +62,11 @@ async function togglePush() {
     pushEnabled.value = true
     try {
       await subscribe(auth.user.id)
+      openModal({
+        icon: '🔔',
+        title: '알림이 허용되었어요',
+        description: '새 알림이 오면 알려드릴게요.',
+      })
     } catch (e) {
       pushEnabled.value = false
       openModal({ icon: '🔔', title: '알림 설정 실패', description: e?.message || '알림 설정에 실패했어요.' })

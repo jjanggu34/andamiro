@@ -9,7 +9,7 @@ const route    = useRoute()
 const auth     = useAuthStore()
 const exchange = useExchangeStore()
 
-const postId  = route.query.id ?? ''
+const inviteToken = route.query.token ?? route.query.id ?? ''
 const post    = ref(null)
 const code    = ref('')
 const joining = ref(false)
@@ -21,16 +21,16 @@ const isWebView = computed(() => {
 })
 
 onMounted(async () => {
-  if (!postId) { error.value = '유효하지 않은 초대 링크예요.'; return }
+  if (!inviteToken) { error.value = '유효하지 않은 초대 링크예요.'; return }
   if (!auth.user) return  // 로그인 안내 UI 표시
 
-  const data = await exchange.getPostForJoin(postId)
-  if (!data) { error.value = '존재하지 않는 방이에요.'; return }
-  post.value = data
+  const invitation = await exchange.getInvitationPreview(inviteToken)
+  if (!invitation?.post) { error.value = '존재하지 않는 초대예요.'; return }
+  post.value = invitation.post
 })
 
 async function loginWithGoogle() {
-  try { await auth.signInWithGoogle(postId) }
+  try { await auth.signInWithGoogle(inviteToken) }
   catch { error.value = '로그인에 실패했어요. 다시 시도해 주세요.' }
 }
 
@@ -39,9 +39,9 @@ async function join() {
   joining.value = true
   error.value   = ''
   try {
-    const ok = await exchange.joinRoom(post.value.id, code.value.trim().toUpperCase())
-    if (ok === false) { error.value = '초대코드가 올바르지 않아요.'; return }
-    router.replace(`/exchange/view/${post.value.id}`)
+    const postId = await exchange.acceptInvitation(inviteToken, code.value.trim().toUpperCase())
+    if (postId === false) { error.value = '초대코드가 올바르지 않아요.'; return }
+    router.replace(`/exchange/view/${postId}`)
   } catch (e) {
     error.value = e?.message || '입장 중 오류가 발생했어요.'
   } finally {

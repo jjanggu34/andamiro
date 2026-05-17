@@ -31,6 +31,10 @@ export default defineConfig(({ mode }) => {
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       manifest: {
         name: '안다미로',
         short_name: '안다미로',

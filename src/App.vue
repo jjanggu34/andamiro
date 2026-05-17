@@ -17,7 +17,7 @@ watch(() => authStore.user, (user, prev) => {
   const pendingId = sessionStorage.getItem('pendingJoin')
   if (pendingId) {
     sessionStorage.removeItem('pendingJoin')
-    router.replace(`/exchange/join?id=${pendingId}`)
+    router.replace(`/exchange/join?token=${pendingId}`)
   } else if (authStore.isNewUser()) {
     router.replace('/join/1')
   } else {
