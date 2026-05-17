@@ -6,6 +6,14 @@ export const useAuthStore = defineStore('auth', () => {
   const user      = ref(null)
   const profile   = ref(null)
   const loading   = ref(true)
+  const profileLoaded = ref(false)
+
+  function withTimeout(promise, timeoutMs) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
+    ])
+  }
 
   async function init(code = null) {
     if (!loading.value) return
@@ -18,10 +26,20 @@ export const useAuthStore = defineStore('auth', () => {
       // getSession은 localStorage 읽기라 즉시 반환 — 타임아웃 불필요
       const { data } = await supabase.auth.getSession()
       user.value = data.session?.user ?? null
-      if (user.value) await fetchProfile()
+      if (user.value) {
+        // 프로필 조회가 오래 걸려도 앱 전체를 스플래시에 묶어두지 않는다.
+        try {
+          await withTimeout(fetchProfile(), 10000)
+        } catch {
+          profileLoaded.value = false
+        }
+      } else {
+        profileLoaded.value = true
+      }
     } catch {
       user.value    = null
       profile.value = null
+      profileLoaded.value = true
     } finally {
       loading.value = false
     }
@@ -29,24 +47,35 @@ export const useAuthStore = defineStore('auth', () => {
     supabase.auth.onAuthStateChange(async (_, session) => {
       user.value = session?.user ?? null
       if (user.value) await fetchProfile()
-      else profile.value = null
+      else {
+        profile.value = null
+        profileLoaded.value = true
+      }
     })
   }
 
   async function fetchProfile() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.value.id)
-      .single()
-    if (error) { profile.value = null; return }
-    profile.value = data
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.value.id)
+        .single()
+      if (error) {
+        profile.value = null
+        return
+      }
+      profile.value = data
+    } finally {
+      profileLoaded.value = true
+    }
   }
 
   async function signOut() {
     await supabase.auth.signOut()
     user.value    = null
     profile.value = null
+    profileLoaded.value = true
   }
 
   async function signInWithGoogle(joinPostId = null) {
@@ -60,7 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
-  const isNewUser = () => user.value && !profile.value
+  const isNewUser = () => user.value && profileLoaded.value && !profile.value
 
-  return { user, profile, loading, init, fetchProfile, signOut, signInWithGoogle, isNewUser }
+  return { user, profile, loading, profileLoaded, init, fetchProfile, signOut, signInWithGoogle, isNewUser }
 })
