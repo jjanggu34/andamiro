@@ -9,11 +9,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function init(code = null) {
     if (!loading.value) return
-    // 5초 안에 응답 없으면 비로그인 처리
-    const timeout = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 5000))
     try {
-      if (code) await Promise.race([supabase.auth.exchangeCodeForSession(code), timeout])
-      const { data } = await Promise.race([supabase.auth.getSession(), timeout])
+      if (code) {
+        // 코드 교환은 네트워크 요청 — 15초 타임아웃
+        const codeTimeout = new Promise(resolve => setTimeout(resolve, 15000))
+        await Promise.race([supabase.auth.exchangeCodeForSession(code), codeTimeout])
+      }
+      // getSession은 localStorage 읽기라 즉시 반환 — 타임아웃 불필요
+      const { data } = await supabase.auth.getSession()
       user.value = data.session?.user ?? null
       if (user.value) await fetchProfile()
     } catch {

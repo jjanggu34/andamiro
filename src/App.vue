@@ -1,12 +1,29 @@
 <script setup>
-import { ref, provide, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, provide, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import ModalBottom from '@/components/layout/modalBottom.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const router    = useRouter()
+const route     = useRoute()
 const appReady  = computed(() => !authStore.loading)
+
+// 타임아웃으로 /login에 머물던 중 auth가 뒤늦게 복구되면 자동 이동
+watch(() => authStore.user, (user, prev) => {
+  if (!user || prev) return  // 로그아웃이거나 이미 로그인 상태면 무시
+  const stuck = route.path === '/login' || route.path === '/'
+  if (!stuck) return
+  const pendingId = sessionStorage.getItem('pendingJoin')
+  if (pendingId) {
+    sessionStorage.removeItem('pendingJoin')
+    router.replace(`/exchange/join?id=${pendingId}`)
+  } else if (authStore.isNewUser()) {
+    router.replace('/join/1')
+  } else {
+    router.replace('/main')
+  }
+})
 
 // ── 모달 ──────────────────────────────────────────────────────
 const modalShow    = ref(false)
