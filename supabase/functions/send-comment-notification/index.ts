@@ -21,6 +21,33 @@ function json(body: unknown, status = 200) {
   })
 }
 
+function expiredEndpointsFrom(errors: string[]) {
+  return errors.flatMap((error) => {
+    const [code, status, endpoint] = error.split(':')
+    return code === 'push_failed' && (status === '404' || status === '410') && endpoint ? [endpoint] : []
+  })
+}
+
+async function pruneExpiredSubscriptions(
+  admin: ReturnType<typeof createClient>,
+  endpoints: string[]
+) {
+  if (!endpoints.length) return
+  try {
+    const { error } = await admin.from('push_subscriptions').delete().in('endpoint', endpoints)
+    if (error) {
+      console.warn('push subscription cleanup failed', { endpoints, error: error.message })
+      return
+    }
+    console.info('push subscriptions cleaned', { endpoints })
+  } catch (error) {
+    console.warn('push subscription cleanup failed', {
+      endpoints,
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
 async function sendPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   post: { id: string; title: string }
@@ -145,13 +172,8 @@ serve(async (req) => {
   const failed = recipientResults.length - delivered
   const errors = subscriptionResults.flatMap((result) => result.ok ? [] : [result.error])
 
-  const expiredEndpoints = errors.flatMap((error) => {
-    const [code, status, endpoint] = error.split(':')
-    return code === 'push_failed' && (status === '404' || status === '410') && endpoint ? [endpoint] : []
-  })
-  if (expiredEndpoints.length) {
-    await admin.from('push_subscriptions').delete().in('endpoint', expiredEndpoints)
-  }
+  const expiredEndpoints = expiredEndpointsFrom(errors)
+  await pruneExpiredSubscriptions(admin, expiredEndpoints)
 
   return json({
     delivered,
