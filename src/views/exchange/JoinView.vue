@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useExchangeStore } from '@/stores/exchange'
@@ -15,19 +15,24 @@ const code    = ref('')
 const joining = ref(false)
 const error   = ref('')
 
+const isWebView = computed(() => {
+  const ua = navigator.userAgent
+  return /KAKAOTALK|NAVER|Instagram|FB_IAB|FBAN/i.test(ua) || (/Android/.test(ua) && /; wv\)/.test(ua))
+})
+
 onMounted(async () => {
   if (!postId) { error.value = '유효하지 않은 초대 링크예요.'; return }
-
-  if (!auth.user) {
-    sessionStorage.setItem('pendingJoin', postId)
-    router.replace('/login')
-    return
-  }
+  if (!auth.user) return  // 로그인 안내 UI 표시
 
   const data = await exchange.getPostForJoin(postId)
   if (!data) { error.value = '존재하지 않는 방이에요.'; return }
   post.value = data
 })
+
+async function loginWithGoogle() {
+  try { await auth.signInWithGoogle(postId) }
+  catch { error.value = '로그인에 실패했어요. 다시 시도해 주세요.' }
+}
 
 async function join() {
   if (!post.value || !code.value.trim()) return
@@ -48,7 +53,20 @@ async function join() {
 <template>
   <div class="join-wrap">
     <div class="join-card">
-      <template v-if="error">
+      <template v-if="!auth.user">
+        <p class="join-label">교환일기 초대</p>
+        <p class="join-login-desc">로그인 후 초대를 수락할 수 있어요.</p>
+        <div v-if="isWebView" class="join-webview-warn">
+          <p class="join-webview-warn__title">⚠️ 구글 로그인이 지원되지 않아요</p>
+          <p class="join-webview-warn__desc">하단 메뉴의 <strong>다른 브라우저로 열기</strong>를 눌러 Chrome에서 열어주세요.</p>
+        </div>
+        <button class="join-btn join-btn--google" :disabled="isWebView" @click="loginWithGoogle">
+          Google로 로그인
+        </button>
+        <p v-if="error" class="join-error">{{ error }}</p>
+      </template>
+
+      <template v-else-if="error">
         <p class="join-error">{{ error }}</p>
         <button class="join-btn" @click="router.replace('/exchange')">교환일기로 돌아가기</button>
       </template>
@@ -195,4 +213,28 @@ async function join() {
 }
 
 .join-error { color: #dc2626; }
+
+.join-login-desc {
+  font-size: $font14;
+  color: $text-sub;
+  text-align: center;
+}
+
+.join-btn--google {
+  background: $white;
+  color: $title;
+  border: 1.5px solid $border;
+}
+
+.join-webview-warn {
+  width: 100%;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+
+  &__title { font-size: $font13; font-weight: $font-sb; color: #e65100; margin-bottom: 6px; }
+  &__desc   { font-size: $font12; color: #5d4037; line-height: 1.6; }
+}
 </style>

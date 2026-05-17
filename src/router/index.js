@@ -59,6 +59,11 @@ router.beforeEach(async (to) => {
   const oauthCode = isExchangeJoin ? null : (to.query.code ?? null)
   if (auth.loading) await auth.init(oauthCode)
 
+  // OAuth 콜백에 pendingJoin 파라미터 있으면 sessionStorage에 저장
+  if (to.query.pendingJoin) {
+    sessionStorage.setItem('pendingJoin', to.query.pendingJoin)
+  }
+
   // OAuth 콜백 code 파라미터 제거 (초대 경로 제외)
   if (to.query.code && !isExchangeJoin) return { path: to.path, query: {} }
 
