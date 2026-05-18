@@ -78,10 +78,12 @@ export const useAuthStore = defineStore('auth', () => {
     profileLoaded.value = true
   }
 
-  async function signInWithGoogle(joinPostId = null) {
-    const redirectTo = joinPostId
-      ? `${window.location.origin}?pendingJoin=${joinPostId}`
-      : window.location.origin
+  async function signInWithGoogle(joinPostId = null, pendingInvite = null) {
+    const params = new URLSearchParams()
+    if (joinPostId)    params.set('pendingJoin',   joinPostId)
+    if (pendingInvite) params.set('pendingInvite', pendingInvite)
+    const qs = params.toString()
+    const redirectTo = qs ? `${window.location.origin}?${qs}` : window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },

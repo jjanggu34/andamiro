@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const auth = useAuthStore()
+const auth  = useAuthStore()
+const route = useRoute()
 const error      = ref('')
 const isWebView  = ref(false)
 const isIOS      = ref(false)
@@ -28,7 +30,8 @@ function onPrompt(e) {
 }
 
 async function handleGoogle() {
-  try { await auth.signInWithGoogle() }
+  const pendingInvite = route.query.pendingInvite || sessionStorage.getItem('pendingInvite') || null
+  try { await auth.signInWithGoogle(null, pendingInvite) }
   catch { error.value = '구글 로그인에 실패했습니다.' }
 }
 

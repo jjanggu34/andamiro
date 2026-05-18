@@ -62,10 +62,9 @@ router.beforeEach(async (to) => {
   const oauthCode = isExchangeJoin ? null : (to.query.code ?? null)
   if (auth.loading) await auth.init(oauthCode)
 
-  // OAuth 콜백에 pendingJoin 파라미터 있으면 sessionStorage에 저장
-  if (to.query.pendingJoin) {
-    sessionStorage.setItem('pendingJoin', to.query.pendingJoin)
-  }
+  // OAuth 콜백 파라미터를 sessionStorage에 저장
+  if (to.query.pendingJoin)   sessionStorage.setItem('pendingJoin',   to.query.pendingJoin)
+  if (to.query.pendingInvite) sessionStorage.setItem('pendingInvite', to.query.pendingInvite)
 
   // OAuth 콜백 code 파라미터 제거 (초대 경로 제외)
   if (to.query.code && !isExchangeJoin) return { path: to.path, query: {} }
@@ -77,7 +76,10 @@ router.beforeEach(async (to) => {
 
   // 비로그인 → 보호 라우트 접근 차단
   if (to.meta.requiresAuth && !auth.user) {
-    if (to.query.invite) sessionStorage.setItem('pendingInvite', to.query.invite)
+    if (to.query.invite) {
+      // invite 코드를 URL에 실어서 브라우저 전환(카톡→Safari)에서도 살아남게 함
+      return { path: '/login', query: { pendingInvite: to.query.invite } }
+    }
     return '/login'
   }
 
