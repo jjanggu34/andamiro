@@ -90,12 +90,17 @@ router.beforeEach(async (to) => {
     // 신규 유저 → join 플로우로
     if (isNew && !joinPaths.includes(to.path)) return '/join/1'
 
-    // 기존 유저 → 로그인/스플래시 접근 시 pendingJoin 확인 후 리다이렉트
+    // 기존 유저 → 로그인/스플래시 접근 시 pending 확인 후 리다이렉트
     if (!isNew && (to.path === '/' || to.path === '/login' || joinPaths.includes(to.path))) {
-      const pendingId = sessionStorage.getItem('pendingJoin')
+      const pendingId     = sessionStorage.getItem('pendingJoin')
+      const pendingInvite = sessionStorage.getItem('pendingInvite')
       if (pendingId) {
         sessionStorage.removeItem('pendingJoin')
         return `/exchange/join?token=${pendingId}`
+      }
+      if (pendingInvite) {
+        sessionStorage.removeItem('pendingInvite')
+        return `/exchange?invite=${pendingInvite}`
       }
       return '/main'
     }
