@@ -106,6 +106,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           </section>
 
           <section class="card-content">
+            <!--프로필 편집-->
             <div class="card-item my-profile">
               <div class="my-profile__avatar">{{ initial }}</div>
               <div class="my-profile__info">
@@ -114,51 +115,53 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
               </div>
               <button class="my-profile__edit">프로필 편집</button>
             </div>
-
-            <div class="card-item">
-            <p class="my-section__label">나의 기록 요약</p>
-            <div class="my-stats">
-              <div class="my-stats__item">
-                <strong>{{ diary.stats.total }}</strong>
-                <span>작성한 일기</span>
-              </div>
-              <div class="my-stats__item">
-                <strong>{{ exchange.myExchangeCount }}</strong>
-                <span>교환일기</span>
-              </div>
-              <div class="my-stats__item">
-                <strong>{{ diary.stats.monthly }}</strong>
-                <span>이번 달</span>
+            <!--나의 기록요약-->
+            <div class="label-card">
+              <p class="my-section__label">나의 기록 요약</p>
+              <div class="card-item my-stats">
+                <ul>
+                    <li>
+                      <em>{{ diary.stats.total }}</em>
+                      <span>작성한 일기</span>
+                    </li>
+                    <li >
+                      <em>{{ exchange.myExchangeCount }}</em>
+                      <span>교환일기</span>
+                    </li>
+                    <li class="my-stats__item">
+                      <em>{{ diary.stats.monthly }}</em>
+                      <span>이번 달</span>
+                    </li>
+                  </ul>
               </div>
             </div>
-          </div>
-
-          <div class="card-item">
-            <p class="my-section__label">설정</p>
-            <div class="my-list">
-              <RouterLink to="/exchange" class="my-list__item">
-                <span class="my-list__icon my-list__icon--exchange"></span>
-                <span class="my-list__text">교환 일기</span>
-                <span class="my-list__arrow"></span>
-              </RouterLink>
-              <button class="my-list__item" @click="togglePush">
-                <span class="my-list__icon my-list__icon--notice"></span>
-                <span class="my-list__text">푸시 알림</span>
-                <span class="my-toggle" :class="{ 'my-toggle--on': pushEnabled }">
-                  <span class="my-toggle__thumb" />
-                </span>
-              </button>
+            <!--설정-->
+            <div class="label-card">
+              <p class="my-section__label">설정</p>
+              <div class="card-item my-list">
+                <RouterLink to="/exchange" class="my-list__item">
+                    <span class="my-list__icon my-list__icon--exchange"></span>
+                    <span class="my-list__text">교환 일기</span>
+                </RouterLink>
+                  <button class="my-list__item" @click="togglePush">
+                    <span class="my-list__icon my-list__icon--notice"></span>
+                    <span class="my-list__text">푸시 알림</span>
+                    <span class="my-toggle" :class="{ 'my-toggle--on': pushEnabled }">
+                      <span class="my-toggle__thumb" />
+                    </span>
+                  </button>
+              </div>
             </div>
-          </div>
 
-          <div class="card-item">
+          <!--기타-->
+          <div class="label-card">
             <p class="my-section__label">기타</p>
-            <div class="my-list">
+            <div class="card-item my-list">
               <button
-                v-for="item in menuItems"
-                :key="item.label"
-                class="my-list__item"
-              >
+                  v-for="item in menuItems"
+                  :key="item.label"
+                  class="my-list__item"
+                >
                 <span :class="['my-list__icon', `my-list__icon--${item.icon}`]"></span>
                 <span class="my-list__text">{{ item.label }}</span>
                 <span class="my-list__arrow"></span>
@@ -171,11 +174,12 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
             </div>
           </div>
 
-          <div class="card-item">
-            <button class="my-bottom__btn" @click="handleSignOut">로그아웃</button>
-            <span class="my-bottom__divider">|</span>
-            <button class="my-bottom__btn">회원탈퇴</button>
+          <!--로그아웃, 회원탈퇴-->
+          <div class="button-content">
+            <button class="text-button" @click="handleSignOut">로그아웃</button>
+            <button class="text-button">회원탈퇴</button>
           </div>
+
           </section>
         </div>
       </main>
@@ -187,231 +191,4 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
 </template>
 
 <style scoped lang="scss">
-@use '@/assets/scss/tokens' as *;
-
-:global(.my) {
-  background: url("/public/assets/img/my/bg-my.png") no-repeat left top / 100% auto;
-
-
-}
-
-/* ── 프로필 카드 ── */
-.my-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: $white;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-
-  &__avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #f9a825, #f57c00);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: $font18;
-    font-weight: $font-b;
-    color: $white;
-    flex-shrink: 0;
-  }
-
-  &__info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__name {
-    font-size: $font14;
-    font-weight: $font-sb;
-    color: $title;
-  }
-
-  &__email {
-    font-size: $font12;
-    color: $text-sub;
-  }
-
-  &__edit {
-    font-size: $font12;
-    color: $text-sub;
-    border: 1px solid $border;
-    border-radius: 20px;
-    padding: 6px 12px;
-    background: none;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-}
-
-/* ── 본문 ── */
-.my-body {
-  padding: 20px 20px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* ── 섹션 ── */
-.my-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &__label {
-    font-size: $font12;
-    color: $text-sub;
-    font-weight: $font-m;
-    padding: 0 4px;
-  }
-}
-
-/* ── 통계 ── */
-.my-stats {
-  display: flex;
-  background: $white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-
-  &__item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 20px 8px;
-
-    & + & { border-left: 1px solid $border; }
-
-    strong {
-      font-size: $font24;
-      font-weight: $font-b;
-      color: $title;
-    }
-
-    span {
-      font-size: $font12;
-      color: $text-sub;
-    }
-  }
-}
-
-/* ── 리스트 ── */
-.my-list {
-  background: $white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 16px 16px;
-    background: none;
-    border: none;
-    border-top: 1px solid $border;
-    cursor: pointer;
-    text-align: left;
-    text-decoration: none;
-    color: $text-default;
-    font-size: $font14;
-
-    &:first-child { border-top: none; }
-
-    &--version { cursor: default; }
-  }
-
-  &__icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: #EEF3FC;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  &__text {
-    flex: 1;
-    font-size: $font14;
-    color: $text-default;
-  }
-
-  &__arrow {
-    width: 16px;
-    height: 16px;
-    background-color: $text-disabled;
-    mask-image: url('/assets/img/com/ico-next.svg');
-    -webkit-mask-image: url('/assets/img/com/ico-next.svg');
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    mask-position: center;
-  }
-
-  &__version {
-    font-size: $font12;
-    color: $text-sub;
-  }
-}
-
-/* ── 푸시 토글 ── */
-.my-toggle {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background: $border;
-  position: relative;
-  transition: background 0.2s;
-  flex-shrink: 0;
-
-  &--on {
-    background: var(--primary);
-  }
-
-  &__thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #fff;
-    transition: left 0.2s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-
-    .my-toggle--on & {
-      left: 23px;
-    }
-  }
-}
-
-/* ── 하단 버튼 ── */
-.my-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-
-  &__btn {
-    font-size: $font13;
-    color: $text-sub;
-    background: none;
-    border: none;
-    cursor: pointer;
-  }
-
-  &__divider {
-    color: $border;
-    font-size: $font12;
-  }
-}
 </style>
