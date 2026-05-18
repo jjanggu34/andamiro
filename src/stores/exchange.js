@@ -12,6 +12,12 @@ export const useExchangeStore = defineStore('exchange', () => {
     return useAuthStore().user?.id
   }
 
+  async function getAuthHeaders() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) throw new Error('로그인이 필요해요.')
+    return { Authorization: `Bearer ${session.access_token}` }
+  }
+
   async function fetchPosts(filter = 'all') {
     const uid = userId()
     if (!uid) return
@@ -92,12 +98,14 @@ export const useExchangeStore = defineStore('exchange', () => {
       }
     }
 
+    const authHeaders = await getAuthHeaders()
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 20000)
     let invokeData, invokeError
     try {
       ;({ data: invokeData, error: invokeError } = await supabase.functions.invoke('create-exchange-room', {
         body: { title, content, image_url, password: password || null, client_request_id: clientRequestId },
+        headers: authHeaders,
         signal: controller.signal,
       }))
     } finally {
@@ -127,6 +135,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   async function getInvitation(postId) {
     const { data, error } = await supabase.functions.invoke('get-exchange-invitation', {
       body: { post_id: postId },
+      headers: await getAuthHeaders(),
     })
     if (error) {
       const body = await error.context?.json?.().catch(() => null)
@@ -138,6 +147,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   async function regenerateInvitationCode(postId) {
     const { data, error } = await supabase.functions.invoke('regenerate-exchange-invite-code', {
       body: { post_id: postId },
+      headers: await getAuthHeaders(),
     })
     if (error) {
       const body = await error.context?.json?.().catch(() => null)
@@ -149,6 +159,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   async function getInvitationPreview(inviteToken) {
     const { data, error } = await supabase.functions.invoke('get-exchange-invitation-preview', {
       body: { token: inviteToken },
+      headers: await getAuthHeaders(),
     })
     if (error) return null
     return data?.invitation ?? null
@@ -188,6 +199,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   async function acceptInvitation(tokenValue, password) {
     const { data, error } = await supabase.functions.invoke('accept-exchange-invitation', {
       body: { token: tokenValue, password },
+      headers: await getAuthHeaders(),
     })
     if (error) {
       const body = await error.context?.json?.().catch(() => null)
@@ -224,6 +236,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   async function sendCommentPush(postId) {
     const { data, error } = await supabase.functions.invoke('send-comment-notification', {
       body: { post_id: postId },
+      headers: await getAuthHeaders(),
     })
     if (error) {
       const body = await error.context?.json?.().catch(() => null)
