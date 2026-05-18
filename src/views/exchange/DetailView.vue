@@ -30,7 +30,7 @@ onMounted(async () => {
 })
 
 function inviteLink() {
-  return `${location.origin}/exchange/join?token=${invitation.value?.token}`
+  return `${location.origin}/exchange?invite=${invitation.value?.code}`
 }
 
 async function copyInviteLink() {

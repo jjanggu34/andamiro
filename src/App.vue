@@ -17,10 +17,14 @@ watch(() => authStore.user, async (user, prev) => {
   await router.isReady()
   const stuck = route.path === '/login' || route.path === '/'
   if (!stuck) return
-  const pendingId = sessionStorage.getItem('pendingJoin')
+  const pendingId     = sessionStorage.getItem('pendingJoin')
+  const pendingInvite = sessionStorage.getItem('pendingInvite')
   if (pendingId) {
     sessionStorage.removeItem('pendingJoin')
     router.replace(`/exchange/join?token=${pendingId}`)
+  } else if (pendingInvite) {
+    sessionStorage.removeItem('pendingInvite')
+    router.replace(`/exchange?invite=${pendingInvite}`)
   } else if (authStore.isNewUser()) {
     router.replace('/join/1')
   } else {

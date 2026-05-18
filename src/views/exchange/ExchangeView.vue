@@ -1,11 +1,12 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 
 const router   = useRouter()
+const route    = useRoute()
 const exchange = useExchangeStore()
 const auth     = useAuthStore()
 
@@ -51,6 +52,14 @@ watch(() => auth.user, async (u) => {
   if (!u) return
   await exchange.fetchPosts(activeTab.value)
 }, { immediate: true })
+
+onMounted(() => {
+  const invite = route.query.invite
+  if (!invite) return
+  codeInput.value = String(invite).toUpperCase()
+  showCodeInput.value = true
+  joinByCode()
+})
 
 watch(activeTab, (tab) => exchange.fetchPosts(tab))
 

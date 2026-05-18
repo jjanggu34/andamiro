@@ -76,7 +76,10 @@ router.beforeEach(async (to) => {
   const joinPaths = ['/join/1', '/join/2', '/join/3', '/join/4']
 
   // 비로그인 → 보호 라우트 접근 차단
-  if (to.meta.requiresAuth && !auth.user) return '/login'
+  if (to.meta.requiresAuth && !auth.user) {
+    if (to.query.invite) sessionStorage.setItem('pendingInvite', to.query.invite)
+    return '/login'
+  }
 
   // 로그인 상태
   if (auth.user) {

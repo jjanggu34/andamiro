@@ -18,10 +18,14 @@ async function complete() {
     await join.saveProfile()
     await auth.fetchProfile()
     join.reset()
-    const pendingId = sessionStorage.getItem('pendingJoin')
+    const pendingId     = sessionStorage.getItem('pendingJoin')
+    const pendingInvite = sessionStorage.getItem('pendingInvite')
     if (pendingId) {
       sessionStorage.removeItem('pendingJoin')
       router.push(`/exchange/join?token=${pendingId}`)
+    } else if (pendingInvite) {
+      sessionStorage.removeItem('pendingInvite')
+      router.push(`/exchange?invite=${pendingInvite}`)
     } else {
       router.push('/main')
     }
