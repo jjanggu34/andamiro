@@ -31,7 +31,27 @@ serve(async (req) => {
   const { data: authData, error: authError } = await userClient.auth.getUser()
   if (authError || !authData.user) return json({ error: 'Unauthorized' }, 401)
 
-  const { token, password } = await req.json() as { token?: string; password?: string }
+  const { token, password, code } = await req.json() as { token?: string; password?: string; code?: string }
+
+  // 코드만으로 입장 (다중 입장 가능, RLS 우회)
+  if (code && !token) {
+    const { data: post } = await admin
+      .from('exchange_posts')
+      .select('id, user_id, password')
+      .eq('password', code.trim().toUpperCase())
+      .maybeSingle()
+    if (!post) return json({ error: 'invalid_code' }, 404)
+    const userId = authData.user.id
+    if (post.user_id !== userId) {
+      const { error: memberError } = await admin
+        .from('exchange_members')
+        .upsert({ post_id: post.id, user_id: userId }, { onConflict: 'post_id,user_id' })
+      if (memberError) return json({ error: memberError.message }, 500)
+    }
+    return json({ post_id: post.id })
+  }
+
+  // 토큰 방식 (기존 단일 초대)
   if (!token || !password?.trim()) return json({ error: 'Missing fields' }, 400)
 
   const { data: invitation } = await admin

@@ -34,13 +34,11 @@ async function joinByCode() {
   codeError.value  = ''
   codeJoining.value = true
   try {
-    const { data } = await exchange.findPostByCode(code)
-    if (!data) { codeError.value = '유효하지 않은 초대코드예요.'; return }
-    const ok = await exchange.joinRoom(data.id, code)
-    if (!ok) { codeError.value = '입장에 실패했어요.'; return }
+    const postId = await exchange.joinByInviteCode(code)
+    if (!postId) { codeError.value = '유효하지 않은 초대코드예요.'; return }
     showCodeInput.value = false
     codeInput.value     = ''
-    router.push(`/exchange/view/${data.id}`)
+    router.push(`/exchange/view/${postId}`)
   } catch {
     codeError.value = '입장 중 오류가 발생했어요.'
   } finally {

@@ -165,12 +165,17 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data?.invitation ?? null
   }
 
-  async function findPostByCode(code) {
-    return supabase
-      .from('exchange_posts')
-      .select('id')
-      .eq('password', code)
-      .single()
+  async function joinByInviteCode(code) {
+    const { data, error } = await supabase.functions.invoke('accept-exchange-invitation', {
+      body: { code: code.trim().toUpperCase() },
+      headers: await getAuthHeaders(),
+    })
+    if (error) {
+      const body = await error.context?.json?.().catch(() => null)
+      if (body?.error === 'invalid_code') return null
+      throw new Error(body?.error || '입장 중 오류가 발생했어요.')
+    }
+    return data.post_id
   }
 
   async function joinRoom(postId, password) {
@@ -255,5 +260,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, findPostByCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, joinByInviteCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
 })
