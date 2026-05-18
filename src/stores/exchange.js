@@ -13,13 +13,14 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function getAuthHeaders() {
-    let { data: { session } } = await supabase.auth.getSession()
-    // 토큰이 만료됐거나 30초 이내 만료 예정이면 강제 갱신
-    if (!session || (session.expires_at && session.expires_at * 1000 < Date.now() + 30000)) {
-      const { data, error } = await supabase.auth.refreshSession()
-      if (error || !data.session) throw new Error('로그인이 필요해요.')
-      session = data.session
+    // refreshSession()으로 항상 서버에서 신선한 토큰을 받아온다
+    // Safari에서 getSession()이 만료 토큰을 반환하는 경우를 방어
+    const { data, error } = await supabase.auth.refreshSession()
+    if (!error && data.session?.access_token) {
+      return { Authorization: `Bearer ${data.session.access_token}` }
     }
+    // 갱신 실패 시 현재 세션 fallback
+    const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) throw new Error('로그인이 필요해요.')
     return { Authorization: `Bearer ${session.access_token}` }
   }
