@@ -92,36 +92,22 @@ export const useExchangeStore = defineStore('exchange', () => {
       }
     }
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    if (!token) throw new Error('로그인이 필요해요.')
-
-    const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-exchange-room`
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 20000)
-    let res
+    let invokeData, invokeError
     try {
-      res = await fetch(edgeUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          image_url,
-          password: password || null,
-          client_request_id: clientRequestId,
-        }),
+      ;({ data: invokeData, error: invokeError } = await supabase.functions.invoke('create-exchange-room', {
+        body: { title, content, image_url, password: password || null, client_request_id: clientRequestId },
         signal: controller.signal,
-      })
+      }))
     } finally {
       clearTimeout(timer)
     }
-    const body = await res.json()
-    if (!res.ok) throw new Error(body?.error || '방 생성에 실패했어요.')
-    const data = { ...body.room, invitation_token: body.invitation_token }
+    if (invokeError) {
+      const body = await invokeError.context?.json?.().catch(() => null)
+      throw new Error(body?.error || '방 생성에 실패했어요.')
+    }
+    const data = { ...invokeData.room, invitation_token: invokeData.invitation_token }
 
     // 낙관적 업데이트: 목록에 즉시 추가
     if (!posts.value.some(p => p.id === data.id)) {
@@ -139,48 +125,33 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function getInvitation(postId) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    if (!token) throw new Error('로그인이 필요해요.')
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-exchange-invitation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ post_id: postId }),
+    const { data, error } = await supabase.functions.invoke('get-exchange-invitation', {
+      body: { post_id: postId },
     })
-    const body = await res.json()
-    if (!res.ok) throw new Error(body?.error || '초대 정보를 불러오지 못했어요.')
-    return body.invitation
+    if (error) {
+      const body = await error.context?.json?.().catch(() => null)
+      throw new Error(body?.error || '초대 정보를 불러오지 못했어요.')
+    }
+    return data.invitation
   }
 
   async function regenerateInvitationCode(postId) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    if (!token) throw new Error('로그인이 필요해요.')
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/regenerate-exchange-invite-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ post_id: postId }),
+    const { data, error } = await supabase.functions.invoke('regenerate-exchange-invite-code', {
+      body: { post_id: postId },
     })
-    const body = await res.json()
-    if (!res.ok) throw new Error(body?.error || '초대코드를 바꾸지 못했어요.')
-    return body.code
+    if (error) {
+      const body = await error.context?.json?.().catch(() => null)
+      throw new Error(body?.error || '초대코드를 바꾸지 못했어요.')
+    }
+    return data.code
   }
 
-  async function getInvitationPreview(token) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const accessToken = session?.access_token
-    if (!accessToken) throw new Error('로그인이 필요해요.')
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-exchange-invitation-preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ token }),
+  async function getInvitationPreview(inviteToken) {
+    const { data, error } = await supabase.functions.invoke('get-exchange-invitation-preview', {
+      body: { token: inviteToken },
     })
-    const body = await res.json()
-    if (!res.ok) return null
-    return body.invitation ?? null
+    if (error) return null
+    return data?.invitation ?? null
   }
 
   async function findPostByCode(code) {
@@ -215,19 +186,15 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function acceptInvitation(tokenValue, password) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const accessToken = session?.access_token
-    if (!accessToken) throw new Error('로그인이 필요해요.')
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-exchange-invitation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ token: tokenValue, password }),
+    const { data, error } = await supabase.functions.invoke('accept-exchange-invitation', {
+      body: { token: tokenValue, password },
     })
-    const body = await res.json()
-    if (res.status === 403 && body?.error === 'invalid_password') return false
-    if (!res.ok) throw new Error(body?.error || '입장 중 오류가 발생했어요.')
-    return body.post_id
+    if (error) {
+      const body = await error.context?.json?.().catch(() => null)
+      if (error.context?.status === 403 && body?.error === 'invalid_password') return false
+      throw new Error(body?.error || '입장 중 오류가 발생했어요.')
+    }
+    return data.post_id
   }
 
   async function fetchComments(postId) {
@@ -255,21 +222,14 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function sendCommentPush(postId) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    if (!token) return
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-comment-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ post_id: postId }),
+    const { data, error } = await supabase.functions.invoke('send-comment-notification', {
+      body: { post_id: postId },
     })
-    const body = await res.json().catch(() => null)
-    if (!res.ok) throw new Error(body?.error || '댓글 알림 발송에 실패했어요.')
-    return body
+    if (error) {
+      const body = await error.context?.json?.().catch(() => null)
+      throw new Error(body?.error || '댓글 알림 발송에 실패했어요.')
+    }
+    return data
   }
 
   async function deletePost(id) {
