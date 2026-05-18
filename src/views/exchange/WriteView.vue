@@ -45,7 +45,7 @@ function compressImage(file, maxPx = 1200, quality = 0.82) {
       canvas.width  = width
       canvas.height = height
       canvas.getContext('2d').drawImage(img, 0, 0, width, height)
-      canvas.toBlob(blob => resolve(blob ?? file), 'image/jpeg', quality)
+      canvas.toBlob(blob => resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file), 'image/jpeg', quality)
     }
     img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
     img.src = url
