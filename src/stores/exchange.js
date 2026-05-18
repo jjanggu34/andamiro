@@ -255,11 +255,21 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function sendCommentPush(postId) {
-    const { data, error } = await supabase.functions.invoke('send-comment-notification', {
-      body: { post_id: postId },
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-comment-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ post_id: postId }),
     })
-    if (error) throw error
-    return data
+    const body = await res.json().catch(() => null)
+    if (!res.ok) throw new Error(body?.error || '댓글 알림 발송에 실패했어요.')
+    return body
   }
 
   async function deletePost(id) {
