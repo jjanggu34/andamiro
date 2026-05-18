@@ -10,8 +10,11 @@ const route     = useRoute()
 const appReady  = computed(() => !authStore.loading)
 
 // 타임아웃으로 /login에 머물던 중 auth가 뒤늦게 복구되면 자동 이동
-watch(() => authStore.user, (user, prev) => {
+// router.isReady()로 초기 네비게이션 완료 후 route.path를 읽어야
+// "앱 로드 중 초대링크 진입 시 route.path === '/'" 오탐을 막는다
+watch(() => authStore.user, async (user, prev) => {
   if (!user || prev) return  // 로그아웃이거나 이미 로그인 상태면 무시
+  await router.isReady()
   const stuck = route.path === '/login' || route.path === '/'
   if (!stuck) return
   const pendingId = sessionStorage.getItem('pendingJoin')
