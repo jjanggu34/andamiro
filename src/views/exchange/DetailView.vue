@@ -80,14 +80,11 @@ async function submitComment() {
     // 푸시 알림 — 실패해도 사용자에게 영향 없음
     exchange.sendCommentPush(post.value.id)
       .then((result) => {
-        console.info('comment notification result', result)
         const errors = result?.details?.errors ?? []
         if (errors.length) console.warn('comment notification details', errors)
-        alert(`알림 결과\n수신자 ${result?.recipients ?? 0}명\n성공 ${result?.delivered ?? 0}명\n실패 ${result?.failed ?? 0}명`)
       })
       .catch((err) => {
         console.error('comment notification failed', err)
-        alert(`알림 실패\n${err?.message || '알 수 없는 오류'}`)
       })
   } catch (e) {
     error.value = e?.message || '댓글 등록에 실패했어요.'
