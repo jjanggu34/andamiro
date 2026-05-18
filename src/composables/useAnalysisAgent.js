@@ -24,19 +24,27 @@ export function useAnalysisAgent() {
     const token = session?.access_token
     if (!token) throw new Error('로그인이 필요해요.')
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system: SYSTEM,
-        messages: [{ role: 'user', content: buildMessage(emotionType, messages) }],
-      }),
-    })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 25000)
+    let res
+    try {
+      res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          system: SYSTEM,
+          messages: [{ role: 'user', content: buildMessage(emotionType, messages) }],
+        }),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
 
     const data = await res.json()
 

@@ -10,6 +10,7 @@ import FooterCtp from '@/components/layout/FooterCtp.vue'
 import { useChatStore } from '@/stores/chat'
 import { useDiaryStore } from '@/stores/diary'
 import { useAnalysisAgent } from '@/composables/useAnalysisAgent'
+import ResultSkeleton from '@/components/common/ResultSkeleton.vue'
 
 use([CanvasRenderer, GaugeChart])
 
@@ -174,13 +175,8 @@ onMounted(runAnalysis)
     <template #body>
       <main class="result-main">
 
-        <!-- 로딩 -->
-        <div v-if="loading" class="result-loading">
-          <div class="result-loading__dots">
-            <span></span><span></span><span></span>
-          </div>
-          <p>감정을 분석하고 있어요…</p>
-        </div>
+        <!-- 스켈레톤 로딩 -->
+        <ResultSkeleton v-if="loading" />
 
         <template v-else>
           <!-- 점수 섹션 -->
@@ -263,35 +259,6 @@ onMounted(runAnalysis)
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
-}
-
-// ── 로딩 ──
-.result-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 80px 0;
-  color: $text-sub;
-  font-size: $font14;
-
-  &__dots {
-    display: flex;
-    gap: 6px;
-    span {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: $primary;
-      animation: result-bounce 1.2s infinite ease-in-out;
-      &:nth-child(2) { animation-delay: 0.2s; }
-      &:nth-child(3) { animation-delay: 0.4s; }
-    }
-  }
-}
-@keyframes result-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30%            { transform: translateY(-6px); opacity: 1; }
 }
 
 // ── 점수 섹션 ──
