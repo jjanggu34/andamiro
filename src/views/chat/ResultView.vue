@@ -123,6 +123,7 @@ async function runAnalysis() {
     analysis.value = FALLBACK
   } finally {
     loading.value = false
+    await nextTick()
     animateScore(analysis.value.score)
   }
 }
