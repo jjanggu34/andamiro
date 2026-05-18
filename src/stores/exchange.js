@@ -97,20 +97,28 @@ export const useExchangeStore = defineStore('exchange', () => {
     if (!token) throw new Error('로그인이 필요해요.')
 
     const edgeUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-exchange-room`
-    const res = await fetch(edgeUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title,
-        content,
-        image_url,
-        password: password || null,
-        client_request_id: clientRequestId,
-      }),
-    })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 20000)
+    let res
+    try {
+      res = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          content,
+          image_url,
+          password: password || null,
+          client_request_id: clientRequestId,
+        }),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
     const body = await res.json()
     if (!res.ok) throw new Error(body?.error || '방 생성에 실패했어요.')
     const data = { ...body.room, invitation_token: body.invitation_token }
