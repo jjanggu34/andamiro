@@ -1,18 +1,19 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { GaugeChart } from 'echarts/charts'
-import VChart from 'vue-echarts'
+// ── ECharts (원복 시 아래 4줄 주석 해제 + SvgGauge import 제거 + use() 호출 해제) ──
+// import { use } from 'echarts/core'
+// import { CanvasRenderer } from 'echarts/renderers'
+// import { GaugeChart } from 'echarts/charts'
+// import VChart from 'vue-echarts'
+// use([CanvasRenderer, GaugeChart])
+import SvgGauge from '@/components/common/SvgGauge.vue'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
 import { useChatStore } from '@/stores/chat'
 import { useDiaryStore } from '@/stores/diary'
 import { useAnalysisAgent } from '@/composables/useAnalysisAgent'
 import ResultSkeleton from '@/components/common/ResultSkeleton.vue'
-
-use([CanvasRenderer, GaugeChart])
 
 const router      = useRouter()
 const chat        = useChatStore()
@@ -25,7 +26,7 @@ const today = new Date().toISOString().split('T')[0]
 // ── 상태 ──
 const loading    = ref(true)
 const analysis   = ref(null)
-const gaugeScore = ref(0)         // ECharts 실제 값 (애니메이션 트리거)
+const gaugeScore = ref(0)         // 게이지 score prop (SvgGauge / ECharts 공용)
 const mainScore  = ref(0)         // 숫자 카운트업 표시용
 const saving     = ref(false)
 const saveError  = ref('')
@@ -48,47 +49,47 @@ const scores = computed(() =>
     : []
 )
 
-// ── ECharts 게이지 옵션 ──
-const gaugeOption = computed(() => ({
-  animation: true,
-  animationDuration: 1200,
-  animationEasing: 'cubicOut',
-  series: [{
-    type: 'gauge',
-    startAngle: 220,
-    endAngle: -40,
-    min: 0,
-    max: 100,
-    radius: '88%',
-    roundCap: true,
-    progress: {
-      show: true,
-      roundCap: true,
-      width: 14,
-      itemStyle: {
-        color: {
-          type: 'linear',
-          x: 0, y: 0, x2: 1, y2: 0,
-          colorStops: [
-            { offset: 0, color: gaugeColors.value.from },
-            { offset: 1, color: gaugeColors.value.to },
-          ],
-        },
-      },
-    },
-    axisLine: {
-      roundCap: true,
-      lineStyle: { width: 14, color: [[1, '#EFF2F3']] },
-    },
-    pointer:   { show: false },
-    axisTick:  { show: false },
-    splitLine: { show: false },
-    axisLabel: { show: false },
-    title:     { show: false },
-    detail:    { show: false },
-    data: [{ value: gaugeScore.value }],
-  }],
-}))
+// ── ECharts 게이지 옵션 (원복 시 주석 해제) ──
+// const gaugeOption = computed(() => ({
+//   animation: true,
+//   animationDuration: 1200,
+//   animationEasing: 'cubicOut',
+//   series: [{
+//     type: 'gauge',
+//     startAngle: 220,
+//     endAngle: -40,
+//     min: 0,
+//     max: 100,
+//     radius: '88%',
+//     roundCap: true,
+//     progress: {
+//       show: true,
+//       roundCap: true,
+//       width: 14,
+//       itemStyle: {
+//         color: {
+//           type: 'linear',
+//           x: 0, y: 0, x2: 1, y2: 0,
+//           colorStops: [
+//             { offset: 0, color: gaugeColors.value.from },
+//             { offset: 1, color: gaugeColors.value.to },
+//           ],
+//         },
+//       },
+//     },
+//     axisLine: {
+//       roundCap: true,
+//       lineStyle: { width: 14, color: [[1, '#EFF2F3']] },
+//     },
+//     pointer:   { show: false },
+//     axisTick:  { show: false },
+//     splitLine: { show: false },
+//     axisLabel: { show: false },
+//     title:     { show: false },
+//     detail:    { show: false },
+//     data: [{ value: gaugeScore.value }],
+//   }],
+// }))
 
 // ── 숫자 카운트업 ──
 function animateScore(target) {
@@ -189,7 +190,9 @@ onMounted(runAnalysis)
             </div>
             <div class="grap-content">
               <div class="grap-group score-chart">
-                <VChart class="gauge-chart" :option="gaugeOption" autoresize />
+                <!-- ECharts 원복 시: 아래 SvgGauge 주석 처리 후 VChart 주석 해제 -->
+                <SvgGauge :score="gaugeScore" :color-from="gaugeColors.from" :color-to="gaugeColors.to" />
+                <!-- <VChart class="gauge-chart" :option="gaugeOption" autoresize /> -->
                 <div class="gauge-center">
                   <p class="gauge-title">{{ title }}</p>
                   <p class="gauge-score">{{ mainScore }}</p>
@@ -286,10 +289,8 @@ onMounted(runAnalysis)
   align-items: center;
   justify-content: center;
 }
-.gauge-chart {
-  width: 240px;
-  height: 168px;
-}
+/* ECharts 원복 시 주석 해제 */
+/* .gauge-chart { width: 240px; height: 168px; } */
 .gauge-center {
   position: absolute;
   display: flex;
