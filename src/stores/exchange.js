@@ -13,7 +13,13 @@ export const useExchangeStore = defineStore('exchange', () => {
   }
 
   async function getAuthHeaders() {
-    const { data: { session } } = await supabase.auth.getSession()
+    let { data: { session } } = await supabase.auth.getSession()
+    // 토큰이 만료됐거나 30초 이내 만료 예정이면 강제 갱신
+    if (!session || (session.expires_at && session.expires_at * 1000 < Date.now() + 30000)) {
+      const { data, error } = await supabase.auth.refreshSession()
+      if (error || !data.session) throw new Error('로그인이 필요해요.')
+      session = data.session
+    }
     if (!session?.access_token) throw new Error('로그인이 필요해요.')
     return { Authorization: `Bearer ${session.access_token}` }
   }
