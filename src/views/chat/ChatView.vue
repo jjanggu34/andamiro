@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import { useChatStore } from '@/stores/chat'
 import { useChatAgent } from '@/composables/useChatAgent'
+import { useChatN8n } from '@/composables/useChatN8n'
 
 // ── 상수 ──────────────────────────────────────────────────────
 const GREETING_LINE2 = {
@@ -25,9 +26,10 @@ const IMAGE_QUALITY = 0.78
 const VOICE_AUTO_SEND_MS = 2000
 
 // ── 의존성 ─────────────────────────────────────────────────────
-const chat     = useChatStore()
-const router   = useRouter()
-const { send } = useChatAgent()
+const chat              = useChatStore()
+const router            = useRouter()
+const { send }          = useChatAgent()
+const { send: sendN8n, isEnabled: useN8n } = useChatN8n()
 
 // ── 상태 ──────────────────────────────────────────────────────
 const inputText    = ref('')
@@ -38,6 +40,7 @@ const showIntro    = ref(true)
 const isThinking   = ref(false)
 const pendingImage = ref(null)   // { base64, mediaType, dataUrl }
 const isVoiceOn    = ref(false)
+const aiChips      = ref([])     // n8n이 반환한 동적 팔로우업 칩
 
 let recognition       = null
 let voiceFinalAccum   = ''
@@ -92,8 +95,16 @@ async function callAI() {
   const img = pendingImage.value
   pendingImage.value = null
   try {
-    const reply = await send(chat.emotion, chat.messages, img)
-    chat.addMessage('assistant', reply)
+    let replyText
+    if (useN8n) {
+      const { reply, chips } = await sendN8n(chat.emotion, chat.messages, img)
+      replyText = reply
+      aiChips.value = chips
+    } else {
+      replyText = await send(chat.emotion, chat.messages, img)
+      aiChips.value = []
+    }
+    chat.addMessage('assistant', replyText)
   } catch (err) {
     const s = err.status
     const msg =
@@ -102,6 +113,7 @@ async function callAI() {
       s === 529 ? 'AI 서버가 바빠요. 잠시 후 다시 시도해 주세요.' :
       '죄송해요, 잠시 문제가 생겼어요. 다시 말씀해 주세요 🙏'
     chat.addMessage('assistant', msg)
+    aiChips.value = []
   } finally {
     isThinking.value = false
     scrollToBottom()
@@ -337,9 +349,16 @@ onBeforeUnmount(stopVoice)
             </div>
           </div>
 
-          <!-- 기록완료 칩 (대화 중) -->
+          <!-- 동적 칩 + 기록완료 (대화 중) -->
           <div v-if="!showIntro && chat.messages.length > 0 && !isThinking" class="chat-chips-wrap">
             <div class="chat-chips">
+              <button
+                v-for="chip in aiChips"
+                :key="chip"
+                type="button"
+                class="chat-chip"
+                @click="handleChipClick(chip)"
+              >{{ chip }}</button>
               <button type="button" class="chat-chip chat-chip--finish" @click="finishDiary">기록완료</button>
             </div>
           </div>

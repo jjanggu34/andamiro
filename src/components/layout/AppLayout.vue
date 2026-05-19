@@ -48,10 +48,10 @@ async function logout() {
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  height: $header-height;
-  padding: 0 20px;
+  height: calc(#{$header-height} + env(safe-area-inset-top, 0px));
+  padding: 0 20px calc(12px);
   padding-top: env(safe-area-inset-top, 0px);
   background: $white;
   border-bottom: 1px solid $border;

@@ -15,9 +15,10 @@ const router    = useRouter()
 const openModal = inject('openModal')
 const { subscribe, unsubscribe } = usePushSubscription()
 
-const nickname = computed(() => auth.profile?.nickname ?? auth.user?.email?.split('@')[0] ?? '친구')
-const email    = computed(() => auth.user?.email ?? '')
-const initial  = computed(() => nickname.value.charAt(0).toUpperCase())
+const nickname  = computed(() => auth.profile?.nickname ?? auth.user?.email?.split('@')[0] ?? '친구')
+const email     = computed(() => auth.user?.email ?? '')
+const initial   = computed(() => nickname.value.charAt(0).toUpperCase())
+const avatarUrl = computed(() => auth.user?.user_metadata?.avatar_url ?? null)
 
 const pushEnabled = ref(false)
 
@@ -108,7 +109,10 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           <section class="card-content">
             <!--프로필 편집-->
             <div class="card-item my-profile">
-              <div class="my-profile__avatar">{{ initial }}</div>
+              <div class="my-profile__avatar">
+                <img v-if="avatarUrl" :src="avatarUrl" alt="프로필" referrerpolicy="no-referrer" />
+                <span v-else>{{ initial }}</span>
+              </div>
               <div class="my-profile__info">
                 <strong class="my-profile__name">{{ nickname }}</strong>
                 <span class="my-profile__email">{{ email }}</span>
@@ -117,7 +121,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
             </div>
             <!--나의 기록요약-->
             <div class="label-card">
-              <p class="my-section__label">나의 기록 요약</p>
+              <p class="my-section__label">활동요약</p>
               <div class="card-item my-stats">
                 <ul>
                     <li>
@@ -137,7 +141,6 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
             </div>
             <!--설정-->
             <div class="label-card">
-              <p class="my-section__label">설정</p>
               <div class="card-item my-list">
                 <RouterLink to="/exchange" class="my-list__item">
                     <span class="my-list__icon my-list__icon--exchange"></span>
@@ -155,7 +158,6 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
 
           <!--기타-->
           <div class="label-card">
-            <p class="my-section__label">기타</p>
             <div class="card-item my-list">
               <button
                   v-for="item in menuItems"
@@ -177,6 +179,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           <!--로그아웃, 회원탈퇴-->
           <div class="button-content">
             <button class="text-button" @click="handleSignOut">로그아웃</button>
+            <span class="line"></span>
             <button class="text-button">회원탈퇴</button>
           </div>
 
