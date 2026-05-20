@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
+import ModalBottom from '@/components/layout/modalBottom.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 
@@ -16,56 +17,68 @@ const sending     = ref(false)
 const loading     = ref(true)
 const error       = ref('')
 const invitation  = ref(null)
-const codeBusy    = ref(false)
 
-const myId       = auth.user?.id
-const showInvite = ref(false)
+const myId           = auth.user?.id
+const linkCopied     = ref(false)
+const showShareModal = ref(false)
+const shareUrl       = ref('')
+const copyToast = ref(false)
+let copyToastTimer = null
 
 onMounted(async () => {
   const id = route.params.id
+  if (history.state?.justCreated) {
+    shareUrl.value = history.state.shareUrl ?? ''
+    showShareModal.value = true
+  }
   post.value = await exchange.getById(id)
   if (post.value?.user_id === myId) invitation.value = await exchange.getInvitation(id)
   await exchange.fetchComments(id)
   loading.value = false
 })
 
-function inviteLink() {
-  return `${location.origin}/exchange?invite=${invitation.value?.code}`
+function showCopyToast() {
+  copyToast.value = true
+  clearTimeout(copyToastTimer)
+  copyToastTimer = setTimeout(() => {
+    copyToast.value = false
+    closeShareModal()
+  }, 2000)
+}
+
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+  } catch { /* ignore */ }
+  showShareModal.value = false
+  showCopyToast()
+}
+
+function closeShareModal() {
+  showShareModal.value = false
+  router.replace('/exchange')
+}
+
+async function shareWithFriend() {
+  if (navigator.share) {
+    try {
+      await navigator.share({ url: shareUrl.value })
+      closeShareModal()
+      return
+    } catch { /* 사용자가 취소한 경우 무시 */ }
+  }
+  await copyShareLink()
 }
 
 async function copyInviteLink() {
-  if (!post.value?.password || !invitation.value?.token) return
+  if (!invitation.value?.token) return
+  const link = `${location.origin}/exchange/join?token=${invitation.value.token}`
   try {
-    await navigator.clipboard.writeText(inviteLink())
-    alert('초대 링크가 복사되었어요!')
+    await navigator.clipboard.writeText(link)
+    linkCopied.value = true
+    setTimeout(() => { linkCopied.value = false }, 2000)
   } catch {
-    showInvite.value = true
-  }
-}
-
-async function copyInviteCode() {
-  if (!invitation.value?.code) return
-  try {
-    await navigator.clipboard.writeText(invitation.value.code)
-    alert('초대코드가 복사되었어요!')
-  } catch {
-    alert(`초대코드: ${invitation.value.code}`)
-  }
-}
-
-async function regenerateCode() {
-  if (!post.value?.id || codeBusy.value) return
-  if (!confirm('새 초대코드를 만들면 이전 코드는 더 이상 사용할 수 없어요. 계속할까요?')) return
-  codeBusy.value = true
-  try {
-    invitation.value = {
-      ...invitation.value,
-      code: await exchange.regenerateInvitationCode(post.value.id),
-    }
-  } catch (e) {
-    alert(e?.message || '초대코드를 바꾸지 못했어요.')
-  } finally {
-    codeBusy.value = false
+    alert(link)
   }
 }
 
@@ -108,23 +121,9 @@ async function submitComment() {
             <h2 class="detail-post__title">{{ post.title }}</h2>
             <span class="detail-post__date">{{ post.created_at?.slice(0, 10) }}</span>
             <p class="detail-post__content">{{ post.content }}</p>
-            <button v-if="post.user_id === myId && post.password && invitation?.token" class="detail-invite-btn" @click="copyInviteLink">
-              초대 링크 복사
+            <button v-if="post.user_id === myId && invitation?.token" class="detail-invite-btn" @click="copyInviteLink">
+              {{ linkCopied ? '복사 완료!' : '초대 링크 복사' }}
             </button>
-            <div v-if="post.user_id === myId && invitation?.code" class="detail-code-box">
-              <p class="detail-code-box__label">초대코드</p>
-              <div class="detail-code-box__row">
-                <strong class="detail-code-box__value">{{ invitation.code }}</strong>
-                <button type="button" @click="copyInviteCode">복사</button>
-                <button type="button" :disabled="codeBusy" @click="regenerateCode">
-                  {{ codeBusy ? '변경 중' : '재생성' }}
-                </button>
-              </div>
-            </div>
-            <div v-if="showInvite && post.password && invitation?.token" class="detail-invite-box">
-              <p class="detail-invite-box__label">아래 링크를 직접 복사하세요</p>
-              <p class="detail-invite-box__link">{{ inviteLink() }}</p>
-            </div>
           </section>
 
           <!-- 댓글 목록 -->
@@ -167,31 +166,50 @@ async function submitComment() {
 
     </template>
   </PageLayout>
+
+  <!-- 등록 완료 모달 -->
+  <ModalBottom
+    :show="showShareModal"
+    title="공유 일기가 만들어졌어요!"
+    description="아래 링크를 상대방에게 공유해 주세요"
+    @close="closeShareModal"
+  >
+    <div class="img-content">
+      <p class="img-group ok-diary"><img src="/assets/img/com/bg-ok.png" style="max-width:280px" alt=""></p>
+    </div>
+    <template #footer>
+      <div class="button-content--duo">
+        <button class="btn-ctp--secondary" @click="copyShareLink">링크 복사</button>
+        <button class="btn-ctp" @click="shareWithFriend">친구에게 공유</button>
+      </div>
+    </template>
+  </ModalBottom>
+
+  <Transition name="toast">
+    <div v-if="copyToast" class="detail-toast">복사되었습니다.</div>
+  </Transition>
 </template>
 
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
 
-.detail-invite-box {
-  margin-top: 8px;
-  padding: 12px;
-  background: $bg-color;
-  border-radius: 12px;
-
-  &__label {
-    font-size: $font12;
-    color: $text-sub;
-    margin-bottom: 6px;
-  }
-
-  &__link {
-    font-size: $font12;
-    color: $primary;
-    word-break: break-all;
-    line-height: 1.5;
-    user-select: all;
-  }
+.detail-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: $white;
+  font-size: $font14;
+  padding: 10px 20px;
+  border-radius: 100px;
+  white-space: nowrap;
+  z-index: 2000;
+  pointer-events: none;
 }
+
+.toast-enter-active, .toast-leave-active { transition: opacity 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; }
 
 .detail-invite-btn {
   margin-top: 12px;
@@ -208,45 +226,6 @@ async function submitComment() {
   text-align: center;
 }
 
-.detail-code-box {
-  margin-top: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: $white;
-  border: 1px solid $border;
-
-  &__label {
-    font-size: $font12;
-    color: $text-sub;
-    margin-bottom: 8px;
-  }
-
-  &__row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  &__value {
-    flex: 1;
-    font-size: $font18;
-    letter-spacing: 2px;
-    color: $title;
-  }
-
-  button {
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 8px;
-    background: $bg-color;
-    color: $text-default;
-    font-size: $font13;
-
-    &:disabled {
-      color: $text-disabled;
-    }
-  }
-}
 
 .detail-loading {
   display: flex;

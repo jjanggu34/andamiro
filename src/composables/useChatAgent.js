@@ -20,6 +20,14 @@ function buildSystemPrompt(emotionType) {
   )
 }
 
+const RETRY_STATUSES = new Set([429, 529])
+const MAX_RETRIES    = 3
+const RETRY_DELAY_MS = 3000
+
+async function delay(ms) {
+  return new Promise(r => setTimeout(r, ms))
+}
+
 export function useChatAgent() {
   // pendingImage: { base64: string, mediaType: string } | null
   async function send(emotionType, messages, pendingImage = null) {
@@ -27,17 +35,12 @@ export function useChatAgent() {
       .filter(m => (m.role === 'user' || m.role === 'assistant') && m.text)
       .map(m => ({ role: m.role, content: m.text }))
 
-    // 마지막 user 메시지에 이미지 주입 (텍스트 없이 사진만 보낸 경우 기본 프롬프트 사용)
+    // 이미지는 항상 새 user 메시지로 끝에 추가 (기존 메시지 수정 시 마지막이 assistant로 끝나 API 400 오류 발생)
     if (pendingImage?.base64) {
-      let lastIdx = apiMessages.findLastIndex(m => m.role === 'user')
-      if (lastIdx < 0) {
-        apiMessages.push({ role: 'user', content: '이 사진을 보고 이야기해줘' })
-        lastIdx = 0
-      }
-      apiMessages[lastIdx] = {
+      apiMessages.push({
         role: 'user',
         content: [
-          { type: 'text', text: apiMessages[lastIdx].content || '이 사진을 보고 이야기해줘' },
+          { type: 'text', text: '이 사진을 보고 이야기해줘' },
           {
             type: 'image',
             source: {
@@ -47,39 +50,50 @@ export function useChatAgent() {
             },
           },
         ],
-      }
+      })
     }
 
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
     if (!token) throw new Error('로그인이 필요해요.')
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 512,
-        system: buildSystemPrompt(emotionType),
-        messages: apiMessages,
-      }),
+    const model = pendingImage?.base64 ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001'
+    const body = JSON.stringify({
+      model,
+      max_tokens: 512,
+      system: buildSystemPrompt(emotionType),
+      messages: apiMessages,
     })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      const msg = data?.error?.message || data?.error || data?.message || '요청 실패'
-      const err = new Error(String(msg))
-      err.status = res.status
-      throw err
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     }
 
-    const text = data?.content?.[0]?.text
-    if (!text) throw new Error('응답이 비어 있어요.')
-    return text
+    let lastErr
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      if (attempt > 0) await delay(RETRY_DELAY_MS * attempt)
+
+      let res, data
+      try {
+        res  = await fetch('/api/chat', { method: 'POST', headers, body })
+        data = await res.json().catch(() => null)
+      } catch (fetchErr) {
+        throw fetchErr
+      }
+
+      if (res.ok) {
+        const text = data?.content?.[0]?.text
+        if (!text) throw new Error('응답이 비어 있어요.')
+        return text
+      }
+
+      const msg = data?.error?.message || data?.error || data?.message || '요청 실패'
+      lastErr = Object.assign(new Error(String(msg)), { status: res.status })
+
+      if (!RETRY_STATUSES.has(res.status)) break
+    }
+
+    throw lastErr
   }
 
   return { send }

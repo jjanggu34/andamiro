@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, nextTick, inject } from 'vue'
 import { useRouter } from 'vue-router'
 // ── ECharts (원복 시 아래 4줄 주석 해제 + SvgGauge import 제거 + use() 호출 해제) ──
 // import { use } from 'echarts/core'
@@ -45,9 +45,21 @@ const gaugeColors = computed(() => GAUGE_COLORS[chat.emotion] ?? GAUGE_COLORS.no
 const title  = computed(() => analysis.value?.mood ?? '')
 const scores = computed(() =>
   analysis.value
-    ? Object.entries(analysis.value.metrics).map(([label, val]) => ({ label, val }))
+    ? Object.entries(analysis.value.metrics ?? {}).map(([label, val]) => ({ label, val }))
     : []
 )
+
+const displayInsight = computed(() => {
+  const raw = analysis.value?.insight?.trim()
+  if (!raw) return '오늘 하루도 수고하셨어요. 충분히 쉬고 내일도 좋은 하루 되세요.'
+  return raw
+})
+
+const displaySummary = computed(() => {
+  const raw = (analysis.value?.summary || chat.content || '').trim()
+  if (!raw) return '채팅 내용이 기록되지 않았어요.'
+  return raw.replace(/\s+/g, ' ')
+})
 
 // ── ECharts 게이지 옵션 (원복 시 주석 해제) ──
 // const gaugeOption = computed(() => ({
@@ -119,12 +131,17 @@ const FALLBACK = {
 async function runAnalysis() {
   try {
     analysis.value = await analyze(chat.emotion, chat.messages)
-  } catch {
+  } catch (err) {
+    console.warn('[result] analyze failed → fallback:', err?.message ?? err)
     analysis.value = FALLBACK
   } finally {
     loading.value = false
     await nextTick()
-    animateScore(analysis.value.score)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        animateScore(analysis.value.score)
+      })
+    })
   }
 }
 
@@ -219,10 +236,10 @@ onMounted(runAnalysis)
                 <span class="icon01"></span>
                 오늘은 이렇게 보내고 계시는군요!
               </h3>
-              <p class="result-insights">{{ analysis.insight }}</p>
+              <p class="result-insights">{{ displayInsight }}</p>
               <div class="card-tips">
                 <h4>채팅 요약</h4>
-                <p>{{ analysis.summary }}</p>
+                <p>{{ displaySummary }}</p>
               </div>
             </div>
             <div class="card-item">
@@ -387,5 +404,28 @@ onMounted(runAnalysis)
   .btn-ctp--secondary { flex: 1; }
 }
 
+// ── 그래프 입장 애니메이션 ──
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.82); }
+  70%  { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.grap-group.score-chart {
+  animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.score-item {
+  animation: fadeUp 0.4s ease both;
+  &:nth-child(1) { animation-delay: 0.15s; }
+  &:nth-child(2) { animation-delay: 0.25s; }
+  &:nth-child(3) { animation-delay: 0.35s; }
+  &:nth-child(4) { animation-delay: 0.45s; }
+}
 
 </style>

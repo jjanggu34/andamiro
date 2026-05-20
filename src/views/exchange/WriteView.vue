@@ -3,7 +3,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
+import FormGroup from '@/components/common/FormGroup.vue'
 import { useExchangeStore } from '@/stores/exchange'
+import { supabase } from '@/lib/supabase'
 
 const router   = useRouter()
 const exchange = useExchangeStore()
@@ -14,19 +16,46 @@ const imageFile    = ref(null)
 const imagePreview = ref('')
 const title        = ref('')
 const content      = ref('')
-const password     = ref('')
-const saving       = ref(false)
-const error        = ref('')
+const password      = ref('')
+const showPassword  = ref(false)
+const saving        = ref(false)
+const polishing     = ref(false)
+const imageError    = ref('')
+const titleError    = ref('')
+const contentError  = ref('')
+const passwordError = ref('')
+const saveError     = ref('')
 const clientRequestId = ref(crypto.randomUUID())
 
-function generateCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+async function polishContent(summary) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+  if (!token) { content.value = summary; return }
+
+  polishing.value = true
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        system: '사용자의 채팅 요약을 받아 마치 본인이 오늘 하루를 직접 쓴 것처럼 1인칭 감성 일기체로 다듬어 주세요. 2~3문장마다 자연스럽게 줄바꿈(\\n)을 넣어 읽기 편하게 작성하세요. 설명이나 부연 없이 일기 본문만 반환하세요.',
+        messages: [{ role: 'user', content: summary }],
+      }),
+    })
+    const data = await res.json()
+    content.value = data?.content?.[0]?.text?.trim() || summary
+  } catch {
+    content.value = summary
+  } finally {
+    polishing.value = false
+  }
 }
 
 onMounted(() => {
-  content.value  = history.state?.summary ?? ''
-  password.value = generateCode()
+  const summary = history.state?.summary ?? ''
+  if (summary) polishContent(summary)
 })
 
 
@@ -56,11 +85,11 @@ async function onFileChange(e) {
   const file = e.target.files[0]
   if (!file) return
   if (!ALLOWED_TYPES.includes(file.type)) {
-    error.value = 'jpg, png, gif 파일만 등록할 수 있어요.'
+    imageError.value = 'jpg, png, gif 파일만 등록할 수 있어요.'
     e.target.value = ''
     return
   }
-  error.value = ''
+  imageError.value = ''
   imagePreview.value = URL.createObjectURL(file)
   // GIF는 압축 생략 (애니메이션 보존)
   imageFile.value = file.type === 'image/gif' ? file : await compressImage(file)
@@ -72,22 +101,36 @@ function removeImage() {
 }
 
 async function onSave() {
-  error.value = ''
-  if (!title.value.trim())   { error.value = '제목을 입력해 주세요.';   return }
-  if (!content.value.trim()) { error.value = '내용을 입력해 주세요.';   return }
+  titleError.value = ''
+  contentError.value = ''
+  passwordError.value = ''
+  saveError.value = ''
+
+  if (!title.value.trim())    { titleError.value    = '제목을 입력해 주세요.';    return }
+  if (!content.value.trim())  { contentError.value  = '내용을 입력해 주세요.';    return }
+  if (!password.value.trim()) { passwordError.value = '비밀번호를 입력해 주세요.'; return }
 
   saving.value = true
   try {
-    await exchange.save({
+    const result = await exchange.save({
       title:     title.value.trim(),
       content:   content.value.trim(),
       imageFile: imageFile.value,
       password:  password.value.trim() || null,
       clientRequestId: clientRequestId.value,
     })
-    router.replace('/exchange')
+    if (result?.id) {
+      const shareUrl = `${window.location.origin}/exchange/join?token=${result.invitation_token}`
+      router.replace({
+        name: 'exchange-view',
+        params: { id: result.id },
+        state: { justCreated: true, shareUrl },
+      })
+    } else {
+      router.replace('/exchange')
+    }
   } catch (e) {
-    error.value = e?.message || '저장에 실패했어요.'
+    saveError.value = e?.message || '저장에 실패했어요.'
   } finally {
     saving.value = false
   }
@@ -95,79 +138,51 @@ async function onSave() {
 </script>
 
 <template>
-  <PageLayout title="교환일기 작성" back-to="/exchange">
+  <PageLayout title="공유일기 만들기" back-to="/exchange">
     <template #body>
-      <div class="write-body">
+      <main class="write-body">
+        <section class="badge-content">
+            <p class="badge-info">✦ AI가 오늘의 일기를 작성했어요</p>
+        </section>
+        <section class="form-content">
+          <!-- 이미지 -->
+          <FormGroup label="이미지" :error="imageError">
+            <div v-if="imagePreview" class="write-img-preview">
+              <img :src="imagePreview" alt="미리보기" />
+              <button type="button" class="write-img-remove" @click="removeImage">✕</button>
+            </div>
+            <label v-else class="write-img-add">
+              <input type="file" accept=".jpg,.jpeg,.png,.gif" class="write-file-input" @change="onFileChange" />
+              <span class="write-img-add__icon">+</span>
+            </label>
+          </FormGroup>
+          <!-- 제목 -->
+          <FormGroup label="제목" for="write-title" :error="titleError">
+            <input id="write-title" v-model="title" class="write-input" type="text" placeholder="제목을 입력해 주세요" maxlength="60" autocomplete="off" />
+          </FormGroup>
 
-        <!-- 이미지 업로드 -->
-        <div class="write-field">
-          <label class="write-label">이미지</label>
-          <div v-if="imagePreview" class="write-img-preview">
-            <img :src="imagePreview" alt="미리보기" />
-            <button type="button" class="write-img-remove" @click="removeImage">✕</button>
-          </div>
-          <label v-else class="write-img-add">
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.gif"
-              class="write-file-input"
-              @change="onFileChange"
-            />
-            <span class="write-img-add__icon">+</span>
-            <span class="write-img-add__text">사진 추가<br><small>jpg · png · gif</small></span>
-          </label>
-        </div>
+          <!-- 채팅 요약 -->
+          <FormGroup label="내용" for="write-content" :error="contentError">
+            <div v-if="polishing" class="write-skeleton" />
+            <textarea v-else id="write-content" v-model="content" class="write-textarea" placeholder="오늘의 채팅 내용을 요약해 주세요" rows="6" />
+          </FormGroup>
 
-        <!-- 제목 -->
-        <div class="write-field">
-          <label class="write-label" for="write-title">내방 제목</label>
-          <input
-            id="write-title"
-            v-model="title"
-            class="write-input"
-            type="text"
-            placeholder="제목을 입력해 주세요"
-            maxlength="60"
-          />
-        </div>
+          <!-- 비밀번호 -->
+          <FormGroup label="비밀번호" for="write-password" hint="초대받은 상대방에게 비밀번호를 알려주세요" :error="passwordError">
+            <div class="write-pw-wrap">
+              <input id="write-password" v-model="password" class="write-input" :type="showPassword ? 'text' : 'password'" placeholder="비밀번호를 입력해 주세요" maxlength="20" autocomplete="new-password" />
+              <button type="button" class="write-pw-eye" @click="showPassword = !showPassword">
+                <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </FormGroup>
+          <p v-if="saveError" class="write-error" role="alert">{{ saveError }}</p>
 
-        <!-- 채팅 요약 -->
-        <div class="write-field">
-          <label class="write-label" for="write-content">채팅 요약</label>
-          <textarea
-            id="write-content"
-            v-model="content"
-            class="write-textarea"
-            placeholder="오늘의 채팅 내용을 요약해 주세요"
-            rows="6"
-          />
-        </div>
+        </section>
+      </main>
 
-        <!-- 초대코드 -->
-        <div class="write-field">
-          <label class="write-label" for="write-password">초대코드</label>
-          <div class="write-code-row">
-            <input
-              id="write-password"
-              v-model="password"
-              class="write-input write-input--code"
-              type="text"
-              placeholder="초대코드"
-              maxlength="20"
-            />
-            <button type="button" class="write-code-btn" @click="password = generateCode()">재생성</button>
-          </div>
-          <p class="write-label--opt">이 코드를 공유하면 상대방이 방에 입장할 수 있어요</p>
-        </div>
-
-        <p v-if="error" class="write-error" role="alert">{{ error }}</p>
-      </div>
-
-      <FooterCtp
-        :label="saving ? '저장 중…' : '저장'"
-        :disabled="saving"
-        @click="onSave"
-      />
+      <FooterCtp :label="saving ? '저장 중…' : '완료'" :disabled="saving" @click="onSave" />
     </template>
   </PageLayout>
 </template>
@@ -175,67 +190,55 @@ async function onSave() {
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
 
-.write-body {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 20px 20px 8px;
+.write-body{
+  margin-bottom:20px;
+
+  .badge-content {
+  display:block;
+  padding:20px  24px;
+
+  .badge-info {
+    display:inline-block;
+    background:#ECF1FE;
+    color:#4A75F7;
+    width:auto;
+    padding:4px 12px;
+    border-radius:20px;
+  }
+
+
+  }
+
+  .form-content {
+    gap:24px;
+  }
+}
+
+
+.write-pw-wrap {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  align-items: center;
+
+  .write-input { flex: 1; padding-right: 44px; }
+
 }
 
-.write-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.write-label {
-  font-size: $font14;
-  font-weight: $font-sb;
-  color: $title;
-}
-
-.write-label--opt {
-  font-size: $font13;
-  font-weight: $font-l;
+.write-pw-eye {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   color: $text-disabled;
+  display: flex;
+  align-items: center;
+
+  svg { width: 20px; height: 20px; }
+  &:hover { color: $text-sub; }
 }
 
-.write-input {
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid $border;
-  border-radius: 12px;
-  font-size: $font16;
-  font-family: inherit;
-  color: $title;
-  background: $white;
-  outline: none;
-  transition: border-color 0.15s;
-
-  &:focus { border-color: $primary; }
-  &::placeholder { color: $text-disabled; }
-}
-
-.write-textarea {
-  padding: 12px 14px;
-  border: 1px solid $border;
-  border-radius: 12px;
-  font-size: $font14;
-  font-family: inherit;
-  color: $title;
-  background: $white;
-  resize: none;
-  outline: none;
-  line-height: 1.6;
-  transition: border-color 0.15s;
-
-  &:focus { border-color: $primary; }
-  &::placeholder { color: $text-disabled; }
-}
 
 // 이미지 업로드
 .write-img-add {
@@ -249,12 +252,15 @@ async function onSave() {
   border: 1.5px dashed $border;
   border-radius: 12px;
   cursor: pointer;
-  background: $bg-color;
+  background: $color-fa;
 
   &__icon {
     font-size: 24px;
     color: $text-disabled;
     line-height: 1;
+    text-align:center;
+
+    &::before { content:""; display:block; width:20px; height:20px; background:url("/public/assets/img/com/ico-folder.svg") no-repeat center / 100%; }
   }
 
   &__text {
@@ -299,35 +305,37 @@ async function onSave() {
   justify-content: center;
 }
 
-.write-code-row {
+
+.write-share-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
+  width: 100%;
+
+  .btn-ctp { width: 100%; }
 }
 
-.write-input--code {
-  flex: 1;
-  letter-spacing: 4px;
-  font-weight: $font-sb;
-  font-size: $font18;
+.write-share-url {
+  width: 100%;
+  background: #F4F6FA;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: $font12;
+  color: $text-sub;
+  word-break: break-all;
   text-align: center;
 }
 
-.write-code-btn {
-  height: 48px;
-  padding: 0 16px;
-  border: 1px solid $primary;
-  border-radius: 12px;
-  color: $primary;
-  font-size: $font14;
-  font-weight: $font-sb;
-  background: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
 .write-error {
-  font-size: $font13;
+  font-size: $font14;
   color: #dc2626;
   padding: 4px 2px;
 }
+
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
 </style>

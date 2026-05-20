@@ -21,8 +21,8 @@ const STARTER_CHIPS = {
   bad:    ['의욕이 없어요', '피곤하고 처져요', '마음이 무거워요', '집중이 잘 안 돼요'],
   worst:  ['너무 지쳤어요', '불안하고 초조해요', '머리가 복잡해요', '버겁고 힘들어요'],
 }
-const IMAGE_MAX_DIM = 1280
-const IMAGE_QUALITY = 0.78
+const IMAGE_MAX_DIM = 640
+const IMAGE_QUALITY = 0.70
 const VOICE_AUTO_SEND_MS = 2000
 
 // ── 의존성 ─────────────────────────────────────────────────────

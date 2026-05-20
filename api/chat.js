@@ -1,5 +1,9 @@
-const MODEL      = 'claude-haiku-4-5-20251001'
-const MAX_TOKENS = 512
+const ALLOWED_MODELS = new Set([
+  'claude-haiku-4-5-20251001',
+  'claude-sonnet-4-6',
+])
+const DEFAULT_MODEL      = 'claude-haiku-4-5-20251001'
+const DEFAULT_MAX_TOKENS = 512
 
 const SUPABASE_URL     = process.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_KEY
@@ -46,10 +50,14 @@ export default async function handler(req, res) {
     res.status(400).json({ error: 'Invalid JSON body' }); return
   }
 
-  const { system, messages } = body
+  const { system, messages, model: reqModel, max_tokens: reqMaxTokens } = body
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: 'Invalid messages' }); return
   }
+
+  const model     = ALLOWED_MODELS.has(reqModel) ? reqModel : DEFAULT_MODEL
+  const maxTokens = (Number.isInteger(reqMaxTokens) && reqMaxTokens > 0 && reqMaxTokens <= 4096)
+    ? reqMaxTokens : DEFAULT_MAX_TOKENS
 
   // Anthropic 호출
   try {
@@ -60,7 +68,7 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
         'x-api-key':         apiKey,
       },
-      body: JSON.stringify({ model: MODEL, max_tokens: MAX_TOKENS, system, messages }),
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
     })
     const data = await upstream.json()
     res.status(upstream.status).json(data)

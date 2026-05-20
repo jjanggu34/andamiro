@@ -1,20 +1,18 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const auth   = useAuthStore()
-let timer = null
 
-onMounted(() => {
-  // 이미 로그인 상태면 바로 메인으로
-  timer = setTimeout(() => router.replace(auth.user ? '/main' : '/login'), 1500)
-})
-
-onUnmounted(() => {
-  clearTimeout(timer)
-})
+watch(
+  () => auth.loading,
+  (loading) => {
+    if (!loading) router.replace(auth.user ? '/main' : '/login')
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

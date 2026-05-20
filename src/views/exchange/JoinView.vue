@@ -10,10 +10,11 @@ const auth     = useAuthStore()
 const exchange = useExchangeStore()
 
 const inviteToken = route.query.token ?? route.query.id ?? ''
-const post    = ref(null)
-const code    = ref('')
-const joining = ref(false)
-const error   = ref('')
+const post     = ref(null)
+const code     = ref('')
+const showCode = ref(false)
+const joining  = ref(false)
+const error    = ref('')
 
 const isWebView = computed(() => {
   const ua = navigator.userAgent
@@ -35,12 +36,12 @@ async function loginWithGoogle() {
 }
 
 async function join() {
-  if (!post.value || !code.value.trim()) return
+  if (!post.value) return
   joining.value = true
   error.value   = ''
   try {
-    const postId = await exchange.acceptInvitation(inviteToken, code.value.trim().toUpperCase())
-    if (postId === false) { error.value = '초대코드가 올바르지 않아요.'; return }
+    const postId = await exchange.acceptInvitation(inviteToken, code.value.trim())
+    if (postId === false) { error.value = '비밀번호가 틀렸어요.'; return }
     router.replace(`/exchange/view/${postId}`)
   } catch (e) {
     error.value = e?.message || '입장 중 오류가 발생했어요.'
@@ -73,20 +74,26 @@ async function join() {
         <p class="join-desc">{{ post.content }}</p>
 
         <div class="join-code-wrap">
-          <label class="join-code-label">초대코드 입력</label>
-          <input
-            v-model="code"
-            class="join-code-input"
-            type="text"
-            placeholder="초대코드 입력"
-            maxlength="20"
-            @keydown.enter="join"
-          />
+          <label class="join-code-label">비밀번호</label>
+          <div class="join-pw-wrap">
+            <input
+              v-model="code"
+              class="join-code-input"
+              :type="showCode ? 'text' : 'password'"
+              placeholder="비밀번호를 입력해 주세요"
+              maxlength="20"
+              @keydown.enter="join"
+            />
+            <button type="button" class="join-pw-eye" @click="showCode = !showCode">
+              <svg v-if="showCode" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </div>
 
         <p v-if="error" class="join-error">{{ error }}</p>
 
-        <button class="join-btn" :disabled="joining || !code.trim()" @click="join">
+        <button class="join-btn" :disabled="joining" @click="join">
           {{ joining ? '입장 중…' : '방 입장하기' }}
         </button>
       </template>
@@ -175,21 +182,40 @@ async function join() {
   color: $title;
 }
 
+.join-pw-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.join-pw-eye {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: $text-disabled;
+  display: flex;
+  align-items: center;
+
+  svg { width: 20px; height: 20px; }
+  &:hover { color: $text-sub; }
+}
+
 .join-code-input {
   width: 100%;
   height: 48px;
   border: 1.5px solid $border;
   border-radius: 12px;
-  padding: 0 14px;
+  padding: 0 44px 0 14px;
   font-size: $font16;
-  letter-spacing: 3px;
-  font-weight: $font-sb;
-  text-transform: uppercase;
+  font-family: inherit;
   outline: none;
   box-sizing: border-box;
 
   &:focus { border-color: $primary; }
-  &::placeholder { letter-spacing: 0; font-weight: $font-l; }
+  &::placeholder { color: $text-disabled; }
 }
 
 .join-btn {

@@ -189,8 +189,8 @@ export const useExchangeStore = defineStore('exchange', () => {
       .single()
     if (fetchErr || !post) throw new Error('방을 찾을 수 없어요.')
 
-    const storedPw = (post.password ?? '').trim().toUpperCase()
-    const inputPw  = (password ?? '').trim().toUpperCase()
+    const storedPw = (post.password ?? '').trim()
+    const inputPw  = (password ?? '').trim()
     if (storedPw !== inputPw) return false
     if (post.user_id === uid) return true
 

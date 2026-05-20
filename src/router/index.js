@@ -60,14 +60,23 @@ router.beforeEach(async (to) => {
   // /exchange/join 의 파라미터는 OAuth 코드와 무관
   const isExchangeJoin = to.path === '/exchange/join'
   const oauthCode = isExchangeJoin ? null : (to.query.code ?? null)
-  if (auth.loading) await auth.init(oauthCode)
+
+  // OAuth 코드가 있으면 init()을 await 없이 시작하고 SplashView(/)로 바로 이동
+  // SplashView의 watch가 loading 완료를 기다려 /main으로 이동함
+  if (oauthCode) {
+    if (to.query.pendingJoin)   sessionStorage.setItem('pendingJoin',   to.query.pendingJoin)
+    if (to.query.pendingInvite) sessionStorage.setItem('pendingInvite', to.query.pendingInvite)
+    auth.init()
+    return { path: '/', query: {} }
+  }
+
+  if (auth.loading) {
+    await auth.init()
+  }
 
   // OAuth 콜백 파라미터를 sessionStorage에 저장
   if (to.query.pendingJoin)   sessionStorage.setItem('pendingJoin',   to.query.pendingJoin)
   if (to.query.pendingInvite) sessionStorage.setItem('pendingInvite', to.query.pendingInvite)
-
-  // OAuth 콜백 code 파라미터 제거 (초대 경로 제외)
-  if (to.query.code && !isExchangeJoin) return { path: to.path, query: {} }
 
   // 알림 클릭으로 앱이 루트에서 재실행된 경우 실제 목적지로 복구
   if (notificationTarget) return notificationTarget

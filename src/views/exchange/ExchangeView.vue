@@ -1,7 +1,9 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import AppLayout from '@/components/layout/AppLayout.vue'
+import PageLayout from '@/components/layout/PageLayout.vue'
+import AppTabBar from '@/components/layout/AppTabBar.vue'
+import TabMenu from '@/components/layout/TabMenu.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 
@@ -15,51 +17,60 @@ async function handleDelete(e, id) {
   if (!confirm('방을 삭제하면 댓글도 모두 삭제됩니다. 삭제할까요?')) return
   await exchange.deletePost(id)
 }
-
-const activeTab  = ref('all')
+const activeTab = ref('mine')
 const tabs = [
-  { key: 'all',    label: '전체' },
-  { key: 'mine',   label: '내방' },
-  { key: 'shared', label: '공유방' },
+  { key: 'mine',   label: '내가 공유한' },
+  { key: 'shared', label: '공유 받은' },
 ]
 
-const showCodeInput = ref(false)
-const codeInput     = ref('')
-const codeError     = ref('')
-const codeJoining   = ref(false)
+const joinPost      = ref(null)
+const inviteToken   = ref('')
+const joinPw        = ref('')
+const showJoinPw    = ref(false)
+const joinError     = ref('')
+const joinLoading   = ref(false)
 
-async function joinByCode() {
-  const code = codeInput.value.trim().toUpperCase()
-  if (!code || codeJoining.value) return
-  codeError.value  = ''
-  codeJoining.value = true
+async function handleJoin() {
+  if (!inviteToken.value || joinLoading.value) return
+  joinError.value   = ''
+  joinLoading.value = true
   try {
-    const postId = await exchange.joinByInviteCode(code)
-    if (!postId) { codeError.value = '유효하지 않은 초대코드예요.'; return }
-    showCodeInput.value = false
-    codeInput.value     = ''
+    const postId = await exchange.acceptInvitation(inviteToken.value, joinPw.value)
+    if (postId === false) { joinError.value = '비밀번호가 틀렸어요.'; return }
+    joinPost.value  = null
+    inviteToken.value = ''
+    joinPw.value    = ''
     router.push(`/exchange/view/${postId}`)
-  } catch {
-    codeError.value = '입장 중 오류가 발생했어요.'
+  } catch (e) {
+    joinError.value = e?.message || '입장 중 오류가 발생했어요.'
   } finally {
-    codeJoining.value = false
+    joinLoading.value = false
   }
 }
 
 watch(() => auth.user, async (u) => {
   if (!u) return
-  await exchange.fetchPosts(activeTab.value)
+  await exchange.fetchPosts('all')
 }, { immediate: true })
 
-onMounted(() => {
-  const invite = route.query.invite
-  if (!invite) return
-  codeInput.value = String(invite).toUpperCase()
-  showCodeInput.value = true
-  joinByCode()
+onMounted(async () => {
+  const token = route.query.invite
+  if (!token) return
+  try {
+    const preview = await exchange.getInvitationPreview(token)
+    if (!preview?.post) {
+      joinError.value = '유효하지 않은 초대 링크예요.'
+      joinPost.value  = { title: '초대 오류' }
+      return
+    }
+    inviteToken.value = token
+    joinPost.value    = preview.post
+  } catch {
+    joinError.value = '초대 정보를 불러오지 못했어요.'
+    joinPost.value  = { title: '초대 오류' }
+  }
 })
 
-watch(activeTab, (tab) => exchange.fetchPosts(tab))
 
 function goToPost(id) {
   router.push(`/exchange/view/${id}`)
@@ -67,115 +78,101 @@ function goToPost(id) {
 </script>
 
 <template>
-  <AppLayout title="교환일기">
-    <div class="exch-wrap">
-      <div class="exch-tabs">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="exch-tab"
-          :class="{ 'is-active': activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >{{ tab.label }}</button>
-      </div>
+  <PageLayout title="교환일기" back-to="/main">
+    <template #body>
+      <main class="exch-body">
+        <TabMenu v-model="activeTab" :tabs="tabs" />
+        <section class="list-content">
+          <ul class="exch-posts">
+          <li v-if="!exchange.posts.length" class="exch-empty">
+            아직 작성된 교환일기가 없어요.
+          </li>
+          <li
+            v-for="post in exchange.posts"
+            :key="post.id"
+            class="exch-item"
+            @click="goToPost(post.id)"
+          >
+            <img v-if="post.image_url" :src="post.image_url" class="exch-item__thumb" alt="" />
+            <div class="exch-item__body">
+              <div class="exch-item__title-row">
+                <strong class="exch-item__title">{{ post.title }}</strong>
+                <div class="exch-item__badges">
+                  <span v-if="post.password" class="exch-item__lock">🔒</span>
+                  <span v-if="post._role === 'member'" class="exch-item__badge">공유</span>
+                  <button v-if="post._role === 'owner'" class="exch-item__delete" @click="handleDelete($event, post.id)">삭제</button>
+                </div>
+              </div>
 
-      <ul class="exch-posts">
-        <li v-if="!exchange.posts.length" class="exch-empty">
-          아직 작성된 교환일기가 없어요.
-        </li>
-        <li
-          v-for="post in exchange.posts"
-          :key="post.id"
-          class="exch-item"
-          @click="goToPost(post.id)"
-        >
-          <img v-if="post.image_url" :src="post.image_url" class="exch-item__thumb" alt="" />
-          <div class="exch-item__body">
-            <div class="exch-item__title-row">
-              <strong class="exch-item__title">{{ post.title }}</strong>
-              <div class="exch-item__badges">
-                <span v-if="post.password" class="exch-item__lock">🔒</span>
-                <span v-if="post._role === 'member'" class="exch-item__badge">공유</span>
-                <button v-if="post._role === 'owner'" class="exch-item__delete" @click="handleDelete($event, post.id)">삭제</button>
+              <!-- 최근 댓글 -->
+              <div v-if="post.latest_comment" class="exch-item__latest">
+                <span class="exch-item__latest-icon">💬</span>
+                <p class="exch-item__latest-text">{{ post.latest_comment }}</p>
+              </div>
+              <p v-else class="exch-item__content">{{ post.content }}</p>
+
+              <div class="exch-item__footer">
+                <span class="exch-item__comment-count">💬 {{ post.comment_count }}</span>
+                <span class="exch-item__date">{{ post.last_activity?.slice(0, 10) }}</span>
               </div>
             </div>
+          </li>
+        </ul>
+        </section>
 
-            <!-- 최근 댓글 -->
-            <div v-if="post.latest_comment" class="exch-item__latest">
-              <span class="exch-item__latest-icon">💬</span>
-              <p class="exch-item__latest-text">{{ post.latest_comment }}</p>
-            </div>
-            <p v-else class="exch-item__content">{{ post.content }}</p>
 
-            <div class="exch-item__footer">
-              <span class="exch-item__comment-count">💬 {{ post.comment_count }}</span>
-              <span class="exch-item__date">{{ post.last_activity?.slice(0, 10) }}</span>
-            </div>
+
+        <!-- 비밀번호 입장 모달 -->
+        <div v-if="joinPost" class="exch-pw-overlay" @click.self="joinPost = null">
+          <div class="exch-pw-modal">
+            <strong class="exch-pw-title">{{ joinPost.title }}</strong>
+            <template v-if="inviteToken">
+              <p class="exch-pw-desc">비밀번호를 입력해 주세요</p>
+              <div class="exch-pw-wrap">
+                <input
+                  v-model="joinPw"
+                  class="exch-pw-input"
+                  :type="showJoinPw ? 'text' : 'password'"
+                  placeholder="비밀번호"
+                  autofocus
+                  @keydown.enter="handleJoin"
+                />
+                <button type="button" class="exch-pw-eye" @click="showJoinPw = !showJoinPw">
+                  <svg v-if="showJoinPw" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <button class="exch-pw-confirm" :disabled="joinLoading" @click="handleJoin">
+                {{ joinLoading ? '입장 중…' : '방 입장하기' }}
+              </button>
+            </template>
+            <p v-if="joinError" class="exch-pw-error">{{ joinError }}</p>
+            <button class="exch-pw-close" @click="joinPost = null">닫기</button>
           </div>
-        </li>
-      </ul>
+        </div>
 
-      <!-- 초대코드 입장 패널 -->
-      <div v-if="showCodeInput" class="exch-code-panel">
-        <input
-          v-model="codeInput"
-          class="exch-code-input"
-          type="text"
-          placeholder="초대코드 6자리 입력"
-          maxlength="20"
-          @keydown.enter="joinByCode"
-        />
-        <button class="exch-code-confirm" :disabled="codeJoining" @click="joinByCode">
-          {{ codeJoining ? '입장 중…' : '입장' }}
-        </button>
-        <p v-if="codeError" class="exch-code-error">{{ codeError }}</p>
-      </div>
-
-      <div class="exch-fabs">
-        <button class="exch-fab exch-fab--code" @click="showCodeInput = !showCodeInput">🔑</button>
-        <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
-      </div>
-    </div>
-  </AppLayout>
+        <div class="exch-fabs">
+          <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
+        </div>
+      </main>
+    </template>
+    <template #footer>
+      <AppTabBar />
+    </template>
+  </PageLayout>
 </template>
+
 
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
 
-.exch-wrap {
+.exch-body {
   position: relative;
   padding: 0 20px 80px;
   height: 100%;
-  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-}
-
-.exch-tabs {
-  display: flex;
-  gap: 8px;
-  padding: 16px 0 12px;
-  position: sticky;
-  top: 0;
-  background: $white;
-  z-index: 10;
-}
-
-.exch-tab {
-  padding: 6px 16px;
-  border-radius: 100px;
-  border: 1px solid $border;
-  font-size: $font14;
-  color: $text-sub;
-  cursor: pointer;
-  background: $white;
-  transition: all 0.15s;
-
-  &.is-active {
-    background: $primary;
-    border-color: $primary;
-    color: $white;
-    font-weight: $font-sb;
-  }
+  background:#F5F6F8;
 }
 
 .exch-posts {
@@ -337,59 +334,103 @@ function goToPost(id) {
   align-items: center;
   justify-content: center;
 
-  &--code {
-    font-size: 20px;
-    background: $white;
-    border: 1.5px solid $primary;
-    color: $primary;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
 }
 
-.exch-code-panel {
+.exch-pw-overlay {
   position: fixed;
-  bottom: calc(#{$tabbar-height} + 140px);
-  right: 20px;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.exch-pw-modal {
   background: $white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  padding: 16px;
-  width: 240px;
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  z-index: 100;
+  gap: 12px;
 }
 
-.exch-code-input {
-  height: 44px;
-  border: 1px solid $border;
-  border-radius: 10px;
-  padding: 0 12px;
+.exch-pw-title {
   font-size: $font16;
-  letter-spacing: 3px;
   font-weight: $font-sb;
-  text-transform: uppercase;
+  color: $title;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.exch-pw-desc {
+  font-size: $font13;
+  color: $text-sub;
+  text-align: center;
+  margin-top: -4px;
+}
+
+.exch-pw-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.exch-pw-eye {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: $text-disabled;
+  display: flex;
+  align-items: center;
+
+  svg { width: 20px; height: 20px; }
+  &:hover { color: $text-sub; }
+}
+
+.exch-pw-input {
+  flex: 1;
+  height: 48px;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 0 44px 0 14px;
+  font-size: $font16;
+  font-family: inherit;
   outline: none;
   &:focus { border-color: $primary; }
+  &::placeholder { color: $text-disabled; }
 }
 
-.exch-code-confirm {
-  height: 44px;
+.exch-pw-confirm {
+  height: 48px;
   background: $primary;
   color: $white;
   border: none;
-  border-radius: 10px;
-  font-size: $font14;
+  border-radius: 12px;
   font-weight: $font-sb;
   cursor: pointer;
-
   &:disabled { opacity: 0.6; cursor: default; }
 }
 
-.exch-code-error {
+.exch-pw-error {
   font-size: $font13;
   color: #dc2626;
   text-align: center;
+  margin-top: -4px;
+}
+
+.exch-pw-close {
+  background: none;
+  border: none;
+  font-size: $font13;
+  color: $text-disabled;
+  cursor: pointer;
+  padding: 4px 0;
 }
 </style>

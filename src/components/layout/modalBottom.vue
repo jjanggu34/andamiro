@@ -16,10 +16,9 @@ defineEmits(['close', 'confirm'])
         <div class="modal-bottom" role="dialog" aria-modal="true">
           <div class="modal-bottom__body">
             <span v-if="icon" class="modal-bottom__icon">{{ icon }}</span>
-            <slot>
-              <strong class="modal-bottom__title">{{ title }}</strong>
-              <p v-if="description" class="modal-bottom__desc">{{ description }}</p>
-            </slot>
+            <strong v-if="title" class="modal-bottom__title">{{ title }}</strong>
+            <p v-if="description" class="modal-bottom__desc">{{ description }}</p>
+            <slot />
           </div>
           <div class="modal-bottom__footer">
             <slot name="footer">
@@ -80,6 +79,10 @@ defineEmits(['close', 'confirm'])
   }
 
   &__footer {
+
+    display:flex;
+    gap:10px;
+
     .btn-ctp {
       width: 100%;
       height: 56px;

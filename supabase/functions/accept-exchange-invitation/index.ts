@@ -63,8 +63,8 @@ serve(async (req) => {
   const post = invitation?.post
   if (!invitation || !post || invitation.status !== 'pending') return json({ error: 'Invalid invitation' }, 404)
 
-  const storedPw = (post.password ?? '').trim().toUpperCase()
-  const inputPw = password.trim().toUpperCase()
+  const storedPw = (post.password ?? '').trim()
+  const inputPw = password.trim()
   if (storedPw !== inputPw) return json({ error: 'invalid_password' }, 403)
 
   const userId = authData.user.id
