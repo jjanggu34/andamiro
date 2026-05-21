@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use 'tokens' as *;
 
 // ── 메인 페이지 헤더 ──
@@ -230,7 +231,7 @@
     background: #FAFAFA;
     cursor: pointer;
     transition: background 0.15s;
-    &:hover { background: darken(#eef3fc, 4%); }
+    &:hover { background: color.adjust(#eef3fc, $lightness: -4%); }
 
     p {
       flex:1;
