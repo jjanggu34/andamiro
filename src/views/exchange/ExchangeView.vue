@@ -1,9 +1,11 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
 import TabMenu from '@/components/layout/TabMenu.vue'
+import LoadingSkeleton from '@/components/common/LoadingSkeleton.vue'
+import NoData from '@/components/common/NoData.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { useAuthStore } from '@/stores/auth'
 
@@ -17,6 +19,17 @@ const tabs = [
   { key: 'mine',   label: '내가 공유한' },
   { key: 'shared', label: '공유 받은' },
 ]
+const currentUserId = computed(() => auth.user?.id ?? null)
+const myPosts = computed(() =>
+  exchange.posts.filter(post => post._role === 'owner' && post.user_id === currentUserId.value)
+)
+const sharedPosts = computed(() =>
+  exchange.posts.filter(post => post._role === 'member' && post.user_id !== currentUserId.value)
+)
+const filteredPosts = computed(() =>
+  activeTab.value === 'mine' ? myPosts.value : sharedPosts.value
+)
+const isLoading = computed(() => auth.loading || exchange.loading)
 
 const joinPost      = ref(null)
 const inviteToken   = ref('')
@@ -41,6 +54,13 @@ async function handleJoin() {
   } finally {
     joinLoading.value = false
   }
+}
+
+async function handleDelete(e, id) {
+  e.stopPropagation()
+  if (activeTab.value !== 'mine') return
+  if (!confirm('방을 삭제하면 댓글도 모두 삭제됩니다. 삭제할까요?')) return
+  await exchange.deletePost(id)
 }
 
 watch(() => auth.user, async (u) => {
@@ -93,12 +113,17 @@ function formatPostDate(dateValue) {
       <main class="list-body">
         <TabMenu v-model="activeTab" :tabs="tabs" />
         <section class="list-content">
-          <ul>
-            <li v-if="!exchange.posts.length" class="no-data">
-              아직 작성된 교환일기가 없어요.
-            </li>
+          <LoadingSkeleton v-if="isLoading" type="exchange-list" :count="3" />
+          <NoData
+            v-else-if="filteredPosts.length === 0"
+            title="교환일기방이 없습니다."
+            description="새 방을 만들거나 초대 링크로 참여해 보세요."
+            buttonLabel="공유일기 만들기"
+            buttonTo="/exchange/write"
+          />
+          <ul v-else>
             <li
-              v-for="post in exchange.posts"
+              v-for="post in filteredPosts"
               :key="post.id"
               class="exch-item"
               @click="goToPost(post.id)"
@@ -110,13 +135,20 @@ function formatPostDate(dateValue) {
                 <p class="title">{{ post.title }}</p>
                 <p class="sub-text">
                   <span v-if="activeTab === 'mine'" class="read">{{ post.read_count ?? 0 }}명이 읽었어요</span>
-                  <span v-else class="n-name">{{ post.owner_nickname }}</span>
+                  <span v-else class="n-name">{{ post.owner_nickname || '닉네임 없음' }}</span>
                   <span class="date">{{ formatPostDate(post.last_activity) }}</span>
                 </p>
                 <p class="sub-text">
                   <span class="speech">댓글 {{ post.comment_count }}개</span>
                 </p>
               </div>
+              <button
+                v-if="activeTab === 'mine'"
+                type="button"
+                class="exch-delete"
+                aria-label="교환일기 삭제"
+                @click.stop="handleDelete($event, post.id)"
+              ></button>
             </li>
           </ul>
         </section>

@@ -7,6 +7,7 @@ export const useExchangeStore = defineStore('exchange', () => {
   const posts          = ref([])
   const comments       = ref([])
   const myExchangeCount = ref(0)
+  const loading        = ref(false)
 
   function userId() {
     return useAuthStore().user?.id
@@ -20,42 +21,63 @@ export const useExchangeStore = defineStore('exchange', () => {
 
   async function fetchPosts(filter = 'all') {
     const uid = userId()
-    if (!uid) return
-
-    const needOwn    = filter === 'all' || filter === 'mine'
-    const needMember = filter === 'all' || filter === 'shared'
-
-    const [ownRes, memberRes] = await Promise.all([
-      needOwn
-        ? supabase.from('exchange_posts').select('*, exchange_comments(content, created_at)').eq('user_id', uid)
-        : Promise.resolve({ data: null }),
-      needMember
-        ? supabase.from('exchange_members').select('post:exchange_posts(*, exchange_comments(content, created_at)), joined_at').eq('user_id', uid)
-        : Promise.resolve({ data: null }),
-    ])
-
-    let result = []
-    if (ownRes.data)    result.push(...ownRes.data.map(p => ({ ...p, _role: 'owner' })))
-    if (memberRes.data) {
-      result.push(
-        ...memberRes.data
-          .filter(m => m.post)
-          .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
-      )
+    if (!uid) {
+      loading.value = false
+      return
     }
 
-    posts.value = result
-      .map(p => {
-        const coms   = p.exchange_comments ?? []
-        const sorted = [...coms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        return {
-          ...p,
-          comment_count:  coms.length,
-          latest_comment: sorted[0]?.content ?? null,
-          last_activity:  sorted[0]?.created_at ?? p.created_at,
-        }
-      })
-      .sort((a, b) => new Date(b.last_activity) - new Date(a.last_activity))
+    loading.value = true
+    try {
+      const needOwn    = filter === 'all' || filter === 'mine'
+      const needMember = filter === 'all' || filter === 'shared'
+
+      const [ownRes, memberRes] = await Promise.all([
+        needOwn
+          ? supabase.from('exchange_posts').select('*, exchange_comments(content, created_at)').eq('user_id', uid)
+          : Promise.resolve({ data: null }),
+        needMember
+          ? supabase.from('exchange_members').select('post:exchange_posts(*, exchange_comments(content, created_at)), joined_at').eq('user_id', uid)
+          : Promise.resolve({ data: null }),
+      ])
+
+      let result = []
+      if (ownRes.data)    result.push(...ownRes.data.map(p => ({ ...p, _role: 'owner' })))
+      if (memberRes.data) {
+        result.push(
+          ...memberRes.data
+            .filter(m => m.post)
+            .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
+        )
+      }
+
+      const ownerIds = [...new Set(result.map(post => post.user_id).filter(Boolean))]
+      const { data: profiles } = ownerIds.length
+        ? await supabase.from('profiles').select('id, nickname').in('id', ownerIds)
+        : { data: [] }
+      const nicknameByUserId = new Map((profiles ?? []).map(profile => [profile.id, profile.nickname]))
+
+      const uniquePosts = new Map()
+      for (const post of result) {
+        const existing = uniquePosts.get(post.id)
+        if (!existing || post._role === 'owner') uniquePosts.set(post.id, post)
+      }
+
+      posts.value = [...uniquePosts.values()]
+        .map(p => {
+          const coms   = p.exchange_comments ?? []
+          const sorted = [...coms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          return {
+            ...p,
+            owner_nickname: p.owner_nickname ?? nicknameByUserId.get(p.user_id) ?? null,
+            comment_count:  coms.length,
+            latest_comment: sorted[0]?.content ?? null,
+            last_activity:  sorted[0]?.created_at ?? p.created_at,
+          }
+        })
+        .sort((a, b) => new Date(b.last_activity) - new Date(a.last_activity))
+    } finally {
+      loading.value = false
+    }
   }
 
   async function fetchMyExchangeCount() {
@@ -260,5 +282,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, joinByInviteCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, loading, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, joinByInviteCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
 })
