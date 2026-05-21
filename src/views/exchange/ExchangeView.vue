@@ -108,7 +108,7 @@ function formatPostDate(dateValue) {
 </script>
 
 <template>
-  <PageLayout title="교환일기" back-to="/main">
+  <PageLayout title="공유일기" back-to="/main">
     <template #body>
       <main class="list-body">
         <TabMenu v-model="activeTab" :tabs="tabs" />

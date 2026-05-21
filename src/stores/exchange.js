@@ -260,6 +260,20 @@ export const useExchangeStore = defineStore('exchange', () => {
     return data
   }
 
+  async function deleteComment(commentId) {
+    const uid = userId()
+    if (!uid) throw new Error('not_authenticated')
+
+    const { error } = await supabase
+      .from('exchange_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', uid)
+
+    if (error) throw error
+    return true
+  }
+
   async function sendCommentPush(postId) {
     const { data, error } = await supabase.functions.invoke('send-comment-notification', {
       body: { post_id: postId },
@@ -282,5 +296,5 @@ export const useExchangeStore = defineStore('exchange', () => {
     posts.value = posts.value.filter(p => p.id !== id)
   }
 
-  return { posts, comments, myExchangeCount, loading, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, joinByInviteCode, joinRoom, acceptInvitation, fetchComments, addComment, sendCommentPush, deletePost, fetchMyExchangeCount }
+  return { posts, comments, myExchangeCount, loading, fetchPosts, getById, save, getInvitation, regenerateInvitationCode, getInvitationPreview, joinByInviteCode, joinRoom, acceptInvitation, fetchComments, addComment, deleteComment, sendCommentPush, deletePost, fetchMyExchangeCount }
 })

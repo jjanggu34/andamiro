@@ -70,7 +70,7 @@ src/
 | `/report` | ReportView | ✅ |
 | `/advice` | AdviceView | ✅ |
 | `/exchange` | ExchangeView | ✅ |
-| `/exchange/room` | RoomView | ✅ |
+| `/exchange` | DetailView | ✅ |
 | `/my` | MyView | ✅ |
 | `/my/chat-list` | ChatListView | ✅ |
 | `/my/chat-view` | ChatViewView | ✅ (`?date=YYYY-MM-DD` 필수) |

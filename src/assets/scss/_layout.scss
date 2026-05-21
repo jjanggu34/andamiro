@@ -690,7 +690,7 @@ footer {
 
 
  /*---------------------------------------------
-    #리스트
+   - #리스트
 ---------------------------------------------*/
 
 .list-body {
@@ -737,4 +737,85 @@ footer {
       }
     }
   }
+}
+
+ /*---------------------------------------------
+   - #상세
+---------------------------------------------*/
+
+.detail-page{
+
+  background:#F5F6F8;
+
+  .view-content{
+    .detail-post {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      &__img {
+        width: 100%;
+        max-height: 240px;
+        object-fit: cover;
+        margin-bottom: 4px;
+      }
+
+    }
+
+    .profile {
+      padding:0 24px;
+      display:flex; gap:8px; flex-direction:row; padding-top:16px;
+        p.profile-img {
+          width:32px; height:32px; background:$primary; border-radius:50%; color:$white; text-align:center; line-height:32px; font-weight:$font-b;
+        }
+        p.profile-text{
+          span {
+            display:block;
+
+            &.title{ color:$title; font-weight:$font-b; }
+            &.sub-text{ color:$title;font-size:$font12; color:#666; }
+
+          }
+        }
+    }
+
+    .subject{
+      padding:0 24px;
+      gap:0; padding-bottom:20px;
+      h2 {  display:block; padding:16px 0 12px; color:$title; font-weight:$font-b; font-size:$font20; }
+      .subject-content{  color:$text-default; font-size:$font16;  }
+
+      .button-content{
+        text-align:right;
+
+        .detail-invite-btn {
+          width:auto;
+          display: inline-block;
+          padding: 8px 12px;
+          align-items: center;
+          gap: 4px;
+          align-self: stretch;
+          background:$white;
+          border-radius:20px;
+          color:$primary;
+          border:1px solid $border;
+         }
+
+      }
+
+    }
+  }
+
+  .detail-comments {
+    padding:12px 24px;
+    > div:first-of-type {
+      gap:0;
+      border-top:1px solid #ececec;
+
+      h3 { color:$text-disabled; font-weight:$font-l; }
+
+
+    }
+  }
+
 }
