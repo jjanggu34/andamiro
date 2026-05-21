@@ -73,13 +73,8 @@ export function useChatAgent() {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) await delay(RETRY_DELAY_MS * attempt)
 
-      let res, data
-      try {
-        res  = await fetch('/api/chat', { method: 'POST', headers, body })
-        data = await res.json().catch(() => null)
-      } catch (fetchErr) {
-        throw fetchErr
-      }
+      const res  = await fetch('/api/chat', { method: 'POST', headers, body })
+      const data = await res.json().catch(() => null)
 
       if (res.ok) {
         const text = data?.content?.[0]?.text

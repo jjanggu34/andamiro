@@ -12,11 +12,6 @@ const route    = useRoute()
 const exchange = useExchangeStore()
 const auth     = useAuthStore()
 
-async function handleDelete(e, id) {
-  e.stopPropagation()
-  if (!confirm('방을 삭제하면 댓글도 모두 삭제됩니다. 삭제할까요?')) return
-  await exchange.deletePost(id)
-}
 const activeTab = ref('mine')
 const tabs = [
   { key: 'mine',   label: '내가 공유한' },

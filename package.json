@@ -7,9 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "run-s lint:*",
-    "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache"
+    "lint": "run-s lint:fix:*",
+    "lint:check": "run-s lint:check:*",
+    "lint:check:oxlint": "oxlint .",
+    "lint:check:eslint": "eslint .",
+    "lint:fix": "run-s lint:fix:*",
+    "lint:fix:oxlint": "oxlint . --fix",
+    "lint:fix:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3",
