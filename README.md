@@ -52,3 +52,25 @@ VITE_N8N_WEBHOOK_URL=
 `ANTHROPIC_API_KEY`는 서버 전용 비밀키입니다. 절대 `VITE_` 접두사를 붙이지 마세요.
 
 `VITE_N8N_WEBHOOK_URL`은 현재 비활성 / 추후 사용 예정 값입니다. 값을 넣으면 n8n 채팅 경로가 활성화될 수 있으므로 현재는 비워둡니다.
+
+## `/api/chat`
+
+개발환경과 배포환경의 `/api/chat` 처리 방식이 다릅니다.
+
+| 환경 | 처리 방식 |
+| --- | --- |
+| 개발환경 `npm run dev` | `vite.config.js`의 dev proxy가 `/api/chat` 요청을 Anthropic API로 직접 전달합니다. |
+| 배포환경 Vercel | `api/chat.js` 서버리스 함수가 Supabase 토큰을 검증한 뒤 Anthropic API로 전달합니다. |
+
+Vercel 배포 환경에는 최소한 아래 환경변수가 필요합니다.
+
+```sh
+VITE_SUPABASE_URL=
+VITE_SUPABASE_KEY=
+ANTHROPIC_API_KEY=
+ALLOWED_ORIGIN=
+```
+
+`ALLOWED_ORIGIN`에는 배포된 앱의 origin을 넣습니다. 예: `https://example.com`
+
+현재 n8n은 사용하지 않습니다. `VITE_N8N_WEBHOOK_URL`에 값을 넣으면 채팅 경로가 n8n으로 전환될 수 있으므로, n8n을 실제로 연결하기 전까지는 비워둡니다.
