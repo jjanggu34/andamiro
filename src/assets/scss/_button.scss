@@ -9,8 +9,8 @@ header > button.back {
   margin: 0;
   border: 0;
   background: $title;
-  mask-image: url("../img/svg/ico-prev.svg");
-  -webkit-mask-image: url("../img/svg/ico-prev.svg");
+  mask-image: url("/assets/img/svg/ico-prev.svg");
+  -webkit-mask-image: url("/assets/img/svg/ico-prev.svg");
   mask-repeat: no-repeat;
   mask-size: 38px auto;
   mask-position: center;

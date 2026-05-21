@@ -513,18 +513,18 @@ footer {
       }
 
       &:first-of-type::before {
-        -webkit-mask-image: url("../img/com/ico-home.png");
-        mask-image: url("../img/com/ico-home.png");
+        -webkit-mask-image: url("/assets/img/com/ico-home.png");
+        mask-image: url("/assets/img/com/ico-home.png");
       }
 
       &:nth-of-type(2)::before {
-        -webkit-mask-image: url("../img/com/ico-report.svg");
-        mask-image: url("../img/com/ico-report.png");
+        -webkit-mask-image: url("/assets/img/com/ico-report.png");
+        mask-image: url("/assets/img/com/ico-report.png");
       }
 
       &:nth-of-type(3)::before {
-        -webkit-mask-image: url("../img/com/ico-advice.svg");
-        mask-image: url("../img/com/ico-advice.svg");
+        -webkit-mask-image: url("/assets/img/com/ico-advice.svg");
+        mask-image: url("/assets/img/com/ico-advice.svg");
       }
 
       &[aria-current="page"] {
