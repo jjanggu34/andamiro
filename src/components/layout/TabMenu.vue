@@ -34,7 +34,7 @@ defineEmits(['update:modelValue'])
   width:calc(100% + 48px );
   height:43px;
   margin-left:-24px;
-  margin-bottom:20px;
+  margin-bottom:10px;
 }
 
 .tab-menu__item {

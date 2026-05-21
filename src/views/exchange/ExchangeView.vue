@@ -75,49 +75,55 @@ onMounted(async () => {
 function goToPost(id) {
   router.push(`/exchange/view/${id}`)
 }
+
+function formatPostDate(dateValue) {
+  if (!dateValue) return ''
+  const target = new Date(dateValue)
+  const today = new Date()
+  target.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.floor((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays <= 0) return '오늘'
+  if (diffDays <= 5) return `${diffDays}일전`
+  const y = target.getFullYear()
+  const m = String(target.getMonth() + 1).padStart(2, '0')
+  const d = String(target.getDate()).padStart(2, '0')
+  return `${y}.${m}.${d}`
+}
 </script>
 
 <template>
   <PageLayout title="교환일기" back-to="/main">
     <template #body>
-      <main class="exch-body">
+      <main class="list-body">
         <TabMenu v-model="activeTab" :tabs="tabs" />
         <section class="list-content">
-          <ul class="exch-posts">
-          <li v-if="!exchange.posts.length" class="exch-empty">
-            아직 작성된 교환일기가 없어요.
-          </li>
-          <li
-            v-for="post in exchange.posts"
-            :key="post.id"
-            class="exch-item"
-            @click="goToPost(post.id)"
-          >
-            <img v-if="post.image_url" :src="post.image_url" class="exch-item__thumb" alt="" />
-            <div class="exch-item__body">
-              <div class="exch-item__title-row">
-                <strong class="exch-item__title">{{ post.title }}</strong>
-                <div class="exch-item__badges">
-                  <span v-if="post.password" class="exch-item__lock">🔒</span>
-                  <span v-if="post._role === 'member'" class="exch-item__badge">공유</span>
-                  <button v-if="post._role === 'owner'" class="exch-item__delete" @click="handleDelete($event, post.id)">삭제</button>
-                </div>
+          <ul>
+            <li v-if="!exchange.posts.length" class="no-data">
+              아직 작성된 교환일기가 없어요.
+            </li>
+            <li
+              v-for="post in exchange.posts"
+              :key="post.id"
+              class="exch-item"
+              @click="goToPost(post.id)"
+            >
+              <p class="thumb-box">
+                <img v-if="post.image_url" :src="post.image_url" class="item__thumb" alt="" />
+              </p>
+              <div class="list-box">
+                <p class="title">{{ post.title }}</p>
+                <p class="sub-text">
+                  <span v-if="activeTab === 'mine'" class="read">{{ post.read_count ?? 0 }}명이 읽었어요</span>
+                  <span v-else class="n-name">{{ post.owner_nickname }}</span>
+                  <span class="date">{{ formatPostDate(post.last_activity) }}</span>
+                </p>
+                <p class="sub-text">
+                  <span class="speech">댓글 {{ post.comment_count }}개</span>
+                </p>
               </div>
-
-              <!-- 최근 댓글 -->
-              <div v-if="post.latest_comment" class="exch-item__latest">
-                <span class="exch-item__latest-icon">💬</span>
-                <p class="exch-item__latest-text">{{ post.latest_comment }}</p>
-              </div>
-              <p v-else class="exch-item__content">{{ post.content }}</p>
-
-              <div class="exch-item__footer">
-                <span class="exch-item__comment-count">💬 {{ post.comment_count }}</span>
-                <span class="exch-item__date">{{ post.last_activity?.slice(0, 10) }}</span>
-              </div>
-            </div>
-          </li>
-        </ul>
+            </li>
+          </ul>
         </section>
 
 
@@ -161,276 +167,3 @@ function goToPost(id) {
     </template>
   </PageLayout>
 </template>
-
-
-<style scoped lang="scss">
-@use '@/assets/scss/tokens' as *;
-
-.exch-body {
-  position: relative;
-  padding: 0 20px 80px;
-  height: 100%;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  background:#F5F6F8;
-}
-
-.exch-posts {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 4px 0;
-}
-
-.exch-empty {
-  text-align: center;
-  padding: 60px 0;
-  color: $text-disabled;
-  font-size: $font14;
-}
-
-.exch-item {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: $white;
-  border: 1px solid $border;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: box-shadow 0.15s;
-
-  &:active { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-
-  &__thumb {
-    width: 64px;
-    height: 64px;
-    border-radius: 10px;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-
-  &__body {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__title-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  &__title {
-    font-size: $font16;
-    font-weight: $font-sb;
-    color: $title;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__badges {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-
-  &__lock { font-size: 13px; }
-
-  &__delete {
-    font-size: $font12;
-    color: $white;
-    background: #ff4d4f;
-    border: none;
-    border-radius: 100px;
-    padding: 2px 8px;
-    cursor: pointer;
-  }
-
-  &__badge {
-    font-size: 11px;
-    font-weight: $font-sb;
-    color: $primary;
-    background: rgba(66, 131, 243, 0.1);
-    padding: 2px 6px;
-    border-radius: 100px;
-  }
-
-  &__latest {
-    display: flex;
-    align-items: flex-start;
-    gap: 5px;
-    background: $bg-color;
-    border-radius: 8px;
-    padding: 6px 10px;
-
-    &-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
-
-    &-text {
-      font-size: $font13;
-      color: $text-default;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-    }
-  }
-
-  &__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 2px;
-  }
-
-  &__comment-count {
-    font-size: $font12;
-    color: $primary;
-    font-weight: $font-sb;
-  }
-
-  &__content {
-    font-size: $font13;
-    color: $text-sub;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__date {
-    font-size: $font12;
-    color: $text-disabled;
-    margin-top: auto;
-  }
-}
-
-.exch-fabs {
-  position: fixed;
-  bottom: calc(#{$tabbar-height} + 20px);
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: center;
-}
-
-.exch-fab {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: $primary;
-  color: $white;
-  font-size: 28px;
-  line-height: 1;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(66, 131, 243, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-}
-
-.exch-pw-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 24px;
-}
-
-.exch-pw-modal {
-  background: $white;
-  border-radius: 20px;
-  padding: 28px 24px 24px;
-  width: 100%;
-  max-width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.exch-pw-title {
-  font-size: $font16;
-  font-weight: $font-sb;
-  color: $title;
-  text-align: center;
-  word-break: keep-all;
-}
-
-.exch-pw-desc {
-  font-size: $font13;
-  color: $text-sub;
-  text-align: center;
-  margin-top: -4px;
-}
-
-.exch-pw-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.exch-pw-eye {
-  position: absolute;
-  right: 14px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: $text-disabled;
-  display: flex;
-  align-items: center;
-
-  svg { width: 20px; height: 20px; }
-  &:hover { color: $text-sub; }
-}
-
-.exch-pw-input {
-  flex: 1;
-  height: 48px;
-  border: 1px solid $border;
-  border-radius: 12px;
-  padding: 0 44px 0 14px;
-  font-size: $font16;
-  font-family: inherit;
-  outline: none;
-  &:focus { border-color: $primary; }
-  &::placeholder { color: $text-disabled; }
-}
-
-.exch-pw-confirm {
-  height: 48px;
-  background: $primary;
-  color: $white;
-  border: none;
-  border-radius: 12px;
-  font-weight: $font-sb;
-  cursor: pointer;
-  &:disabled { opacity: 0.6; cursor: default; }
-}
-
-.exch-pw-error {
-  font-size: $font13;
-  color: #dc2626;
-  text-align: center;
-  margin-top: -4px;
-}
-
-.exch-pw-close {
-  background: none;
-  border: none;
-  font-size: $font13;
-  color: $text-disabled;
-  cursor: pointer;
-  padding: 4px 0;
-}
-</style>
