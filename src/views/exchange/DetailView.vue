@@ -244,7 +244,6 @@ async function handleDeleteComment(commentId) {
               <h3 class="detail-comments__heading">댓글 {{ exchange.comments.length }}</h3>
 
               <div v-if="exchange.comments.length === 0" class="detail-comment-empty">
-                <span class="detail-comment-empty__count">댓글 0</span>
                 <span class="detail-comment-empty__divider"></span>
                 <p class="detail-comment-empty__text">첫 댓글을 남겨보세요</p>
               </div>
