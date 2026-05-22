@@ -116,6 +116,33 @@ button:disabled {
   cursor: pointer;
 }
 
+.btn-write {
+    position:absolute;
+    display:inline-flex;
+    align-items: center;
+    justify-content:center;
+    bottom:20px; right:20px;
+    z-index:2;
+    width:60px; height:60px;
+    background:$primary;
+    border-radius:50%;
+
+    button {
+      font-size:0;
+      display:block;
+      width:30px; height:30px;
+      background-color:$white;
+      mask-image: url("/assets/img/com/ico-write.svg");
+      -webkit-mask-image: url("/assets/img/com/ico-write.svg");
+      mask-repeat: no-repeat;
+      mask-size: 30px auto;
+      mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-size: 30px auto;
+      -webkit-mask-position: center;
+    }
+  }
+
 /*---------------------------------------------
     CTP 버튼 (하단 고정)
 ---------------------------------------------*/
