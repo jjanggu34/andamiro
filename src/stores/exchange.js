@@ -9,6 +9,9 @@ export const useExchangeStore = defineStore('exchange', () => {
   const myExchangeCount = ref(0)
   const loading        = ref(false)
 
+  const postSelect = '*, exchange_comments(content, created_at)'
+  const postSelectWithOwnerProfile = '*, profiles(id, nickname), exchange_comments(content, created_at)'
+
   function userId() {
     return useAuthStore().user?.id
   }
@@ -17,6 +20,34 @@ export const useExchangeStore = defineStore('exchange', () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) throw new Error('로그인이 필요해요.')
     return { Authorization: `Bearer ${session.access_token}` }
+  }
+
+  function normalizeNickname(value) {
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+  }
+
+  function profileNickname(profile) {
+    if (Array.isArray(profile)) {
+      return normalizeNickname(profile.find(item => normalizeNickname(item?.nickname))?.nickname)
+    }
+    return normalizeNickname(profile?.nickname)
+  }
+
+  function ownerNicknameFromPost(post) {
+    return (
+      normalizeNickname(post.owner_nickname) ??
+      profileNickname(post.profiles) ??
+      profileNickname(post.profile) ??
+      profileNickname(post.owner) ??
+      normalizeNickname(post.author_nickname) ??
+      normalizeNickname(post.nickname)
+    )
+  }
+
+  async function fetchWithProfileJoin(queryFactory, fallbackFactory) {
+    const joined = await queryFactory(postSelectWithOwnerProfile)
+    if (!joined.error) return joined
+    return fallbackFactory ? fallbackFactory(postSelect) : queryFactory(postSelect)
   }
 
   async function fetchPosts(filter = 'all') {
@@ -28,26 +59,46 @@ export const useExchangeStore = defineStore('exchange', () => {
 
     loading.value = true
     try {
+      let result = null
+      try {
+        const { data, error } = await supabase.functions.invoke('list-exchange-posts', {
+          body: { filter },
+          headers: await getAuthHeaders(),
+        })
+        if (!error && Array.isArray(data?.posts)) result = data.posts
+      } catch {
+        result = null
+      }
+
       const needOwn    = filter === 'all' || filter === 'mine'
       const needMember = filter === 'all' || filter === 'shared'
 
-      const [ownRes, memberRes] = await Promise.all([
-        needOwn
-          ? supabase.from('exchange_posts').select('*, exchange_comments(content, created_at)').eq('user_id', uid)
-          : Promise.resolve({ data: null }),
-        needMember
-          ? supabase.from('exchange_members').select('post:exchange_posts(*, exchange_comments(content, created_at)), joined_at').eq('user_id', uid)
-          : Promise.resolve({ data: null }),
-      ])
+      if (!result) {
+        const [ownRes, memberRes] = await Promise.all([
+          needOwn
+            ? fetchWithProfileJoin(
+              select => supabase.from('exchange_posts').select(select).eq('user_id', uid)
+            )
+            : Promise.resolve({ data: null }),
+          needMember
+            ? fetchWithProfileJoin(
+              select => supabase
+                .from('exchange_members')
+                .select(`post:exchange_posts(${select}), joined_at`)
+                .eq('user_id', uid)
+            )
+            : Promise.resolve({ data: null }),
+        ])
 
-      let result = []
-      if (ownRes.data)    result.push(...ownRes.data.map(p => ({ ...p, _role: 'owner' })))
-      if (memberRes.data) {
-        result.push(
-          ...memberRes.data
-            .filter(m => m.post)
-            .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
-        )
+        result = []
+        if (ownRes.data)    result.push(...ownRes.data.map(p => ({ ...p, _role: 'owner' })))
+        if (memberRes.data) {
+          result.push(
+            ...memberRes.data
+              .filter(m => m.post)
+              .map(m => ({ ...m.post, _role: 'member', _joined_at: m.joined_at }))
+          )
+        }
       }
 
       const ownerIds = [...new Set(result.map(post => post.user_id).filter(Boolean))]
@@ -68,7 +119,7 @@ export const useExchangeStore = defineStore('exchange', () => {
           const sorted = [...coms].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
           return {
             ...p,
-            owner_nickname: p.owner_nickname ?? nicknameByUserId.get(p.user_id) ?? null,
+            owner_nickname: ownerNicknameFromPost(p) ?? normalizeNickname(nicknameByUserId.get(p.user_id)) ?? null,
             comment_count:  coms.length,
             latest_comment: sorted[0]?.content ?? null,
             last_activity:  sorted[0]?.created_at ?? p.created_at,

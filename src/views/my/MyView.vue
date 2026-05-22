@@ -82,13 +82,14 @@ async function handleSignOut() {
 
 const menuItems = [
   { label: '데이터 백업',          icon: 'backup' },
-  { label: '공지사항',             icon: 'notice' },
+  /*{ label: '공지사항',             icon: 'notice' },
   { label: '도움말 / FAQ',         icon: 'help'   },
-  { label: '약관 및 개인정보 처리방침', icon: 'doc'    },
+  { label: '약관 및 개인정보 처리방침', icon: 'doc'    },*/
 ]
 
 onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount(), checkPushStatus()]))
 </script>
+
 
 <template>
   <PageLayout title="마이" class="my">
