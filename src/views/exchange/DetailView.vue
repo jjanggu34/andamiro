@@ -20,6 +20,7 @@ const deletingCommentId = ref(null)
 const error = ref('')
 const invitation = ref(null)
 const linkCopied = ref(false)
+const showMoreModal = ref(false)
 const showShareModal = ref(false)
 const shareUrl = ref('')
 const copyToast = ref(false)
@@ -130,6 +131,17 @@ function closeShareModal() {
   router.replace('/exchange')
 }
 
+function closeMoreModal() {
+  showMoreModal.value = false
+}
+
+function getDetailShareUrl() {
+  if (post.value?.user_id === myId.value && invitation.value?.token) {
+    return `${location.origin}/exchange/join?token=${invitation.value.token}`
+  }
+  return `${location.origin}/exchange/view/${route.params.id}`
+}
+
 async function shareWithFriend() {
   if (navigator.share) {
     try {
@@ -141,6 +153,28 @@ async function shareWithFriend() {
     }
   }
   await copyShareLink()
+}
+
+async function handleSharePost() {
+  if (!post.value) return
+  closeMoreModal()
+  shareUrl.value = getDetailShareUrl()
+  showShareModal.value = true
+}
+
+async function handleDeletePost() {
+  if (!post.value) return
+  if (post.value.user_id !== myId.value) return
+  if (!confirm('게시글을 삭제할까요?')) return
+
+  closeMoreModal()
+
+  try {
+    await exchange.deletePost(post.value.id)
+    router.push('/exchange')
+  } catch (e) {
+    alert(e?.message || '게시글 삭제에 실패했어요.')
+  }
 }
 
 async function copyInviteLink() {
@@ -210,6 +244,21 @@ async function handleDeleteComment(commentId) {
 
 <template>
   <PageLayout title="공유일기 상세" bodyClass="detail-page" back-to="/exchange">
+    <template #action>
+      <button
+        v-if="post"
+        type="button"
+        class="detail-more-btn"
+        aria-label="더보기"
+        @click="showMoreModal = true"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="4" r="1.5" fill="currentColor" />
+          <circle cx="10" cy="10" r="1.5" fill="currentColor" />
+          <circle cx="10" cy="16" r="1.5" fill="currentColor" />
+        </svg>
+      </button>
+    </template>
     <template #body>
       <main class="detail-main">
         <LoadingSkeleton v-if="loading" type="result" :count="1" />
@@ -244,7 +293,6 @@ async function handleDeleteComment(commentId) {
               <h3 class="detail-comments__heading">댓글 {{ exchange.comments.length }}</h3>
 
               <div v-if="exchange.comments.length === 0" class="detail-comment-empty">
-                <span class="detail-comment-empty__divider"></span>
                 <p class="detail-comment-empty__text">첫 댓글을 남겨보세요</p>
               </div>
 
@@ -310,7 +358,7 @@ async function handleDeleteComment(commentId) {
 
   <ModalBottom
     :show="showShareModal"
-    title="공유 일기가 만들어졌어요!"
+    title="다른 친구와도 공유해봐요!"
     description="아래 링크를 상대방에게 공유해 주세요"
     @close="closeShareModal"
   >
@@ -321,6 +369,45 @@ async function handleDeleteComment(commentId) {
       <div class="button-content--duo">
         <button class="btn-ctp--secondary" @click="copyShareLink">링크 복사</button>
         <button class="btn-ctp" @click="shareWithFriend">친구에게 공유</button>
+      </div>
+    </template>
+  </ModalBottom>
+
+  <ModalBottom
+    :show="showMoreModal"
+    :title="post?.title || '더보기'"
+    @close="closeMoreModal"
+  >
+    <template #footer>
+      <div class="detail-more-actions">
+        <button type="button" class="detail-more-action detail-more-action--share" @click="handleSharePost">
+          <span class="detail-more-action__icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M9 3v8M5.5 6.5 9 3l3.5 3.5M4 15h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="detail-more-action__text">
+            <strong>공유하기</strong>
+            <small>초대 링크를 보내요</small>
+          </span>
+        </button>
+
+        <button
+          v-if="post?.user_id === myId"
+          type="button"
+          class="detail-more-action detail-more-action--delete"
+          @click="handleDeletePost"
+        >
+          <span class="detail-more-action__icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 5h12M7 2.5h4M6.5 5l.4 9m4.2-9-.4 9M4.5 5.5l.4 9a1 1 0 0 0 1 .95h6.2a1 1 0 0 0 1-.95l.4-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="detail-more-action__text">
+            <strong>삭제하기</strong>
+            <small>게시글을 완전히 지워요</small>
+          </span>
+        </button>
       </div>
     </template>
   </ModalBottom>
@@ -343,6 +430,18 @@ async function handleDeleteComment(commentId) {
 
 .detail-main > .loading-skeleton {
   padding: 0 24px;
+}
+
+.detail-more-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: $title;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .detail-loading {
@@ -646,6 +745,77 @@ async function handleDeleteComment(commentId) {
   white-space: nowrap;
   z-index: 2000;
   pointer-events: none;
+}
+
+.detail-more-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.detail-more-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid $border;
+  background: #f7f9fc;
+  text-align: left;
+
+  &__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    strong {
+      font-size: $font14;
+      font-weight: $font-sb;
+      color: $title;
+    }
+
+    small {
+      font-size: $font12;
+      color: $text-disabled;
+    }
+  }
+
+  &--share {
+    background: #f2f6ff;
+    border-color: #d7e3ff;
+
+    .detail-more-action__icon {
+      background: #e7efff;
+      color: $primary;
+    }
+  }
+
+  &--delete {
+    background: #fff2f2;
+    border-color: #ffd0d0;
+
+    .detail-more-action__icon {
+      background: #ffe2e2;
+      color: #d64545;
+    }
+
+    strong,
+    small {
+      color: #d64545;
+    }
+  }
 }
 
 .toast-enter-active,

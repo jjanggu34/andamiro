@@ -148,6 +148,7 @@ onMounted(async () => {
           v-else
           title="오늘의 감정을 기록하면&#10;맞춤 조언을 드려요!"
           description="하루를 기록하고 AI의 따뜻한 조언을 받아보세요."
+          buttonLabel="일기 쓰러가기"
         />
       </main>
     </template>

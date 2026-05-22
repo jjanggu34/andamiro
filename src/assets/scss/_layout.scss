@@ -678,19 +678,8 @@ footer {
     font-size: $font22;
     font-weight: 500;
   }
-  .no-data .text-content .text-group::before {
-    content: "";
-    display: block;
-    width: 210px;
-    height: 210px;
-    margin: 0 auto;
-    background: url("/assets/img/com/img-none.png") no-repeat center center / 100% auto;
-    z-index: 2;
-  }
-
-
  /*---------------------------------------------
-   - #리스트
+   - #리스트 - 교환일기
 ---------------------------------------------*/
 
 .list-body {
@@ -700,6 +689,11 @@ footer {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   background:#F5F6F8;
+
+  .no-data:not([hidden]) { background:transparent !important; }
+  .no-data .text-content .text-group p em { font-size:$font18; font-weight:$font-b; }
+  .no-data__icon { width:80px !important; height:80px !important; background:url("/public//assets/img/my/ico-book.png") no-repeat center / 80px !important; }
+
 
   .list-content {
     ul{

@@ -116,10 +116,8 @@ function formatPostDate(dateValue) {
           <LoadingSkeleton v-if="isLoading" type="exchange-list" :count="3" />
           <NoData
             v-else-if="filteredPosts.length === 0"
-            title="교환일기방이 없습니다."
-            description="새 방을 만들거나 초대 링크로 참여해 보세요."
-            buttonLabel="공유일기 만들기"
-            buttonTo="/exchange/write"
+            title="아직 공유한 일기가 없어요"
+            description="일기를 만들고 소중한 사람에게<br/> 초대 링크를 공유해 보세요."
           />
           <ul v-else>
             <li
@@ -151,7 +149,12 @@ function formatPostDate(dateValue) {
               ></button>
             </li>
           </ul>
+
+          <p class="btn-write">
+            <button  @click="$router.push('/exchange/write')">쓰기</button>
+          </p>
         </section>
+
 
 
 
@@ -184,9 +187,6 @@ function formatPostDate(dateValue) {
           </div>
         </div>
 
-        <div class="exch-fabs">
-          <button class="exch-fab" @click="$router.push('/exchange/write')">+</button>
-        </div>
       </main>
     </template>
     <template #footer>

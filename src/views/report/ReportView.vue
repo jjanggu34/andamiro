@@ -208,7 +208,7 @@ watch(() => auth.user, (user) => {
         </template>
 
           <!-- 데이터 없을 때 -->
-          <NoData v-else />
+          <NoData v-else buttonLabel="일기 쓰러가기" />
       </main>
     </template>
     <template #footer>
