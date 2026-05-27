@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import ModalBottom from '@/components/layout/modalBottom.vue'
 import ModalButton from '@/components/common/ModalButton.vue'
+import ChatComposer from '@/components/layout/ChatComposer.vue'
 import EmotionCameraPopup from '@/components/common/EmotionCameraPopup.vue'
 import { useChatStore } from '@/stores/chat'
 import { useChatAgent } from '@/composables/useChatAgent'
@@ -37,8 +38,7 @@ const { send: sendN8n, isEnabled: useN8n } = useChatN8n()
 // ── 상태 ──────────────────────────────────────────────────────
 const inputText    = ref('')
 const chatThread   = ref(null)
-const textarea     = ref(null)
-const fileInput    = ref(null)
+const composerRef  = ref(null)
 const showIntro    = ref(true)
 const isThinking   = ref(false)
 const pendingImage = ref(null)   // { base64, mediaType, dataUrl }
@@ -83,10 +83,7 @@ function showDateSep(i) {
 
 // ── 스크롤 / 리사이즈 ──────────────────────────────────────────
 function autoResize() {
-  const el = textarea.value
-  if (!el) return
-  el.style.height = 'auto'
-  el.style.height = Math.min(el.scrollHeight, 100) + 'px'
+  composerRef.value?.autoResize()
 }
 function scrollToBottom() {
   nextTick(() => {
@@ -160,7 +157,7 @@ function finishDiary() {
 
 // ── 이미지 첨부 ────────────────────────────────────────────────
 function attachImage() { showAttachModal.value = true }
-function pickFromGallery() { showAttachModal.value = false; fileInput.value?.click() }
+function pickFromGallery() { showAttachModal.value = false; composerRef.value?.openFilePicker() }
 function pickFromCamera() {
   showAttachModal.value = false
   showEmotionCamera.value = true
@@ -397,58 +394,25 @@ onBeforeUnmount(() => {
     </template>
 
     <template #footer>
-      <footer class="chat-composer">
-        <!-- 음성 배너 -->
-        <div v-if="isVoiceOn" class="chat-voice-banner">
-          <span class="chat-voice-banner__pulse" aria-hidden="true"></span>
-          <span class="chat-voice-banner__text">음성 대화 중 — 말씀하신 뒤 {{ VOICE_AUTO_SEND_MS / 1000 }}초 뒤 자동 전송돼요</span>
-          <button type="button" class="chat-voice-banner__cancel" @click="stopVoice">취소</button>
-        </div>
-
-        <div class="chat-composer__row">
-          <button type="button" class="chat-composer__attach" aria-label="사진 첨부" @click="attachImage">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M9 4v10M4 9h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </button>
-          <div class="chat-composer__field">
-            <label class="chat-visually-hidden" for="chatInput">메시지 입력</label>
-            <textarea
-              id="chatInput"
-              ref="textarea"
-              v-model="inputText"
-              class="chat-composer__input"
-              rows="1"
-              placeholder="질문을 입력해 보세요"
-              autocomplete="off"
-              :disabled="isThinking"
-              @input="autoResize"
-              @keydown="handleKeydown"
-            />
-            <button
-              type="button"
-              class="chat-composer__mic"
-              :class="{ 'is-recording': isVoiceOn }"
-              :aria-pressed="String(isVoiceOn)"
-              aria-label="음성 대화"
-              @click="toggleVoice"
-            >
-              <svg width="16" height="18" viewBox="0 0 16 18" fill="none" aria-hidden="true">
-                <rect x="4" y="1" width="8" height="11" rx="4" stroke="currentColor" stroke-width="1.4" />
-                <path d="M1 9.5c0 3.9 3.1 7 7 7s7-3.1 7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M8 16.5v1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-            </button>
-          </div>
-          <button type="button" class="chat-composer__send" :disabled="!canSend" @click="sendMessage" aria-label="보내기">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M8 3v10M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-        </div>
-        <!-- 숨겨진 파일 입력 -->
-        <input ref="fileInput" type="file" accept="image/*" class="chat-visually-hidden" tabindex="-1" aria-hidden="true" @change="handleImageFile" />
-      </footer>
+      <ChatComposer
+        ref="composerRef"
+        v-model="inputText"
+        placeholder="질문을 입력해 보세요"
+        :disabled="isThinking"
+        :can-send="canSend"
+        show-attach
+        show-voice
+        :is-voice-on="isVoiceOn"
+        :voice-auto-send-seconds="VOICE_AUTO_SEND_MS / 1000"
+        accept="image/*"
+        @send="sendMessage"
+        @attach="attachImage"
+        @file-change="handleImageFile"
+        @toggle-voice="toggleVoice"
+        @stop-voice="stopVoice"
+        @input="autoResize"
+        @keydown="handleKeydown"
+      />
     </template>
   </PageLayout>
 
