@@ -3,6 +3,7 @@ defineProps({
   show:        { type: Boolean, default: false },
   icon:        { type: String,  default: ''    },
   title:       { type: String,  default: ''    },
+  titleClass:  { type: String,  default: ''    },
   description: { type: String,  default: ''    },
   btnLabel:    { type: String,  default: '확인' },
 })
@@ -16,7 +17,7 @@ defineEmits(['close', 'confirm'])
         <div class="modal-bottom" role="dialog" aria-modal="true">
           <div class="modal-bottom__body">
             <span v-if="icon" class="modal-bottom__icon">{{ icon }}</span>
-            <strong v-if="title" class="modal-bottom__title">{{ title }}</strong>
+            <strong v-if="title" :class="['modal-bottom__title', titleClass]">{{ title }}</strong>
             <p v-if="description" class="modal-bottom__desc">{{ description }}</p>
             <slot />
           </div>
@@ -70,6 +71,8 @@ defineEmits(['close', 'confirm'])
     font-size: $font20;
     font-weight: $font-b;
     color: $title;
+
+    &.title-l {  width:100%; text-align:left;  font-size: $font18; }
   }
 
   &__desc {
