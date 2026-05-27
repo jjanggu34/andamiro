@@ -2,6 +2,9 @@
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
+import ModalBottom from '@/components/layout/modalBottom.vue'
+import ModalButton from '@/components/common/ModalButton.vue'
+import EmotionCameraPopup from '@/components/common/EmotionCameraPopup.vue'
 import { useChatStore } from '@/stores/chat'
 import { useChatAgent } from '@/composables/useChatAgent'
 import { useChatN8n } from '@/composables/useChatN8n'
@@ -40,11 +43,14 @@ const showIntro    = ref(true)
 const isThinking   = ref(false)
 const pendingImage = ref(null)   // { base64, mediaType, dataUrl }
 const isVoiceOn    = ref(false)
+const showAttachModal = ref(false)
+const showEmotionCamera = ref(false)
 const aiChips      = ref([])     // n8n이 반환한 동적 팔로우업 칩
 
 let recognition       = null
 let voiceFinalAccum   = ''
 let voiceAutoSendTimer = null
+let cameraCaptures = []
 
 // ── 계산값 ─────────────────────────────────────────────────────
 const greetingLine2 = computed(() => GREETING_LINE2[chat.emotion] ?? GREETING_LINE2.good)
@@ -153,7 +159,26 @@ function finishDiary() {
 }
 
 // ── 이미지 첨부 ────────────────────────────────────────────────
-function attachImage() { fileInput.value?.click() }
+function attachImage() { showAttachModal.value = true }
+function pickFromGallery() { showAttachModal.value = false; fileInput.value?.click() }
+function pickFromCamera() {
+  showAttachModal.value = false
+  showEmotionCamera.value = true
+}
+function handleCameraComplete(result) {
+  showEmotionCamera.value = false
+  if (result.capturedImageUrl) {
+    cameraCaptures.push({
+      url: result.capturedImageUrl,
+      meta: result.capturedImageMeta,
+    })
+    chat.addMessage('user', '', result.capturedImageUrl)
+    showIntro.value = false
+    scrollToBottom()
+  }
+  const percent = Math.round(result.score * 100)
+  handleUserMessage(`표정 분석 결과는 ${result.emotionLabel} ${percent}%예요.`)
+}
 
 function downscaleImage(dataUrl) {
   return new Promise((resolve) => {
@@ -258,7 +283,11 @@ function toggleVoice() {
 }
 
 onMounted(scrollToBottom)
-onBeforeUnmount(stopVoice)
+onBeforeUnmount(() => {
+  stopVoice()
+  cameraCaptures.forEach(({ url }) => URL.revokeObjectURL(url))
+  cameraCaptures = []
+})
 </script>
 
 <template>
@@ -422,4 +451,51 @@ onBeforeUnmount(stopVoice)
       </footer>
     </template>
   </PageLayout>
+
+  <ModalBottom :show="showAttachModal" title="어떻게 기록할까요?" title-class="title-l" @close="showAttachModal = false">
+    <template #footer>
+      <div class="button-content">
+        <div class="button-group">
+          <ModalButton
+            title="사진 업로드"
+            description="갤러리에서 사진을 선택하세요"
+            icon="photo"
+            @click="pickFromGallery"
+          />
+          <ModalButton
+            title="영상으로 분석"
+            description="카메라로 표정을 실시간 분석해요"
+            icon="video"
+            @click="pickFromCamera"
+          />
+        </div>
+      </div>
+    </template>
+  </ModalBottom>
+
+  <EmotionCameraPopup
+    :show="showEmotionCamera"
+    @close="showEmotionCamera = false"
+    @complete="handleCameraComplete"
+  />
 </template>
+
+<style scoped>
+.btn-attach {
+  width: 100%;
+  height: 52px;
+  border-radius: 100px;
+  font-size: var(--font16);
+  font-weight: 600;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  cursor: pointer;
+
+  &--outline {
+    background: transparent;
+    color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+}
+</style>
