@@ -54,6 +54,7 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+
   const notificationTarget = typeof to.query.notificationTarget === 'string'
     ? to.query.notificationTarget
     : null
@@ -71,7 +72,11 @@ router.beforeEach(async (to) => {
   }
 
   if (auth.loading) {
-    await auth.init()
+    try {
+      await auth.init()
+    } catch (error) {
+      console.error('[router:auth:init]', error)
+    }
   }
 
   // OAuth 콜백 파라미터를 sessionStorage에 저장
@@ -79,7 +84,9 @@ router.beforeEach(async (to) => {
   if (to.query.pendingInvite) sessionStorage.setItem('pendingInvite', to.query.pendingInvite)
 
   // 알림 클릭으로 앱이 루트에서 재실행된 경우 실제 목적지로 복구
-  if (notificationTarget) return notificationTarget
+  if (notificationTarget) {
+    return notificationTarget
+  }
 
   const joinPaths = ['/join/1', '/join/2', '/join/3', '/join/4']
 
@@ -97,7 +104,9 @@ router.beforeEach(async (to) => {
     const isNew = auth.isNewUser()
 
     // 신규 유저 → join 플로우로
-    if (isNew && !joinPaths.includes(to.path)) return '/join/1'
+    if (isNew && !joinPaths.includes(to.path)) {
+      return '/join/1'
+    }
 
     // 기존 유저 → 로그인/스플래시 접근 시 pending 확인 후 리다이렉트
     if (!isNew && (to.path === '/' || to.path === '/login' || joinPaths.includes(to.path))) {

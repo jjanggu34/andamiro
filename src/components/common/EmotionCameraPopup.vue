@@ -53,6 +53,7 @@ let recordingTimer = null
 let isStarting = false
 let modelsPromise = null
 let hasHistoryEntry = false
+let startToken = 0
 
 const expressionItems = computed(() =>
   EXPRESSION_ORDER.map((key) => ({
@@ -80,7 +81,7 @@ watch(
     if (show) {
       await nextTick()
       bindBackButton()
-      start()
+      await start()
       return
     }
     unbindBackButton()
@@ -90,19 +91,31 @@ watch(
 
 async function start() {
   if (isStarting) return
+  const token = ++startToken
   isStarting = true
-  resetAnalysis()
-  statusText.value = 'AI 분석 중'
 
-  await startCamera()
+  try {
+    resetAnalysis()
+    statusText.value = 'AI 분석 중'
 
-  if (cameraReady.value) {
-    startRecordingTimer()
-    await loadModels()
-    startAnalysisLoop()
+    await nextTick()
+    await startCamera(token)
+
+    if (token !== startToken) return
+
+    if (cameraReady.value) {
+      startRecordingTimer()
+      await loadModels()
+
+      if (token !== startToken) return
+
+      startAnalysisLoop()
+    }
+  } finally {
+    if (token === startToken) {
+      isStarting = false
+    }
   }
-
-  isStarting = false
 }
 
 async function loadModels() {
@@ -126,7 +139,7 @@ async function loadModels() {
   }
 }
 
-async function startCamera() {
+async function startCamera(token) {
   cameraError.value = ''
 
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -135,23 +148,43 @@ async function startCamera() {
   }
 
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    const nextStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: 'user',
       },
       audio: false,
     })
 
-    if (!videoRef.value) return
+    if (token !== startToken) {
+      nextStream.getTracks().forEach((track) => track.stop())
+      return
+    }
+
+    stream = nextStream
+
+    await nextTick()
+
+    if (token !== startToken) return
+
+    if (!videoRef.value) {
+      stopStream()
+      cameraError.value = '카메라 화면을 준비하지 못했어요.'
+      return
+    }
 
     videoRef.value.srcObject = stream
 
-    await nextTick()
     await videoRef.value.play()
+
+    if (token !== startToken) return
 
     cameraReady.value = true
   } catch (error) {
     console.error('카메라 실행 실패:', error)
+    if (token !== startToken) return
+
+    stopStream()
+    cameraReady.value = false
 
     if (error.name === 'NotAllowedError') {
       cameraError.value = '카메라 권한이 필요합니다.'
@@ -333,6 +366,8 @@ function close() {
 }
 
 function stop() {
+  startToken += 1
+  isStarting = false
   stopRecordingTimer()
   stopAnalysisLoop()
   stopStream()

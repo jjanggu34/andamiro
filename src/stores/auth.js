@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 
+const INIT_TIMEOUT_MS = 8000
+const PROFILE_TIMEOUT_MS = 8000
+const OAUTH_TIMEOUT_MS = 10000
+
 export const useAuthStore = defineStore('auth', () => {
   const user      = ref(null)
   const profile   = ref(null)
@@ -9,10 +13,82 @@ export const useAuthStore = defineStore('auth', () => {
   const profileLoaded = ref(false)
 
   let _initPromise = null
+  let authListenerUnsubscribe = null
+
+  function withTimeout(promise, ms, label = 'operation') {
+    let timer
+
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error(`${label}_timeout`))
+      }, ms)
+    })
+
+    return Promise.race([promise, timeout]).finally(() => {
+      clearTimeout(timer)
+    })
+  }
+
+  function shouldFetchProfile(nextUser) {
+    if (!nextUser) return false
+    if (!user.value) return true
+    if (user.value.id !== nextUser.id) return true
+    if (!profile.value) return true
+    if (!profileLoaded.value) return true
+    return false
+  }
+
+  function ensureAuthListener() {
+    if (authListenerUnsubscribe) return
+
+    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        user.value = null
+        profile.value = null
+        profileLoaded.value = true
+        loading.value = false
+        return
+      } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        const nextUser = session?.user ?? null
+        const needProfile = shouldFetchProfile(nextUser)
+
+        user.value = nextUser
+
+        if (!nextUser) {
+          profile.value = null
+          profileLoaded.value = true
+          loading.value = false
+          return
+        }
+
+        if (!needProfile) {
+          loading.value = false
+          return
+        }
+
+        try {
+          await withTimeout(fetchProfile(), PROFILE_TIMEOUT_MS, 'auth_listener_fetch_profile')
+        } catch (error) {
+          console.error('[auth:onAuthStateChange:fetchProfile]', error)
+          if (!profile.value) {
+            profileLoaded.value = true
+          }
+        } finally {
+          loading.value = false
+        }
+      }
+    })
+
+    authListenerUnsubscribe = () => data?.subscription?.unsubscribe?.()
+  }
 
   async function init() {
-    if (!loading.value) return
-    if (_initPromise) return _initPromise
+    if (!loading.value) {
+      return
+    }
+    if (_initPromise) {
+      return _initPromise
+    }
 
     const hasOAuthCode = new URLSearchParams(window.location.search).has('code')
 
@@ -20,41 +96,56 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         if (hasOAuthCode) {
           // OAuth 콜백: Supabase가 코드를 자동 교환 → SIGNED_IN 이벤트를 기다림
-          await new Promise((resolve) => {
+          await withTimeout(new Promise((resolve) => {
             let settled = false
-            const done = () => { if (!settled) { settled = true; resolve() } }
-            supabase.auth.onAuthStateChange(async (event, session) => {
+            let unsubscribe = null
+            const done = () => {
+              if (settled) return
+              settled = true
+              unsubscribe?.()
+              resolve()
+            }
+            const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
               user.value = session?.user ?? null
-              if (user.value) await fetchProfile().catch(() => { profileLoaded.value = false })
+              if (user.value) {
+                await withTimeout(fetchProfile(), PROFILE_TIMEOUT_MS, 'auth_oauth_fetch_profile')
+                  .catch((error) => {
+                    console.error('[auth:init:oauth:fetchProfile]', error)
+                    profileLoaded.value = false
+                  })
+              }
               else { profile.value = null; profileLoaded.value = true }
               if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') done()
               else if (event === 'INITIAL_SESSION' && session?.user) done()
             })
-            setTimeout(done, 10000)
-          })
+            unsubscribe = () => data?.subscription?.unsubscribe?.()
+            setTimeout(done, OAUTH_TIMEOUT_MS)
+          }), OAUTH_TIMEOUT_MS + 1000, 'auth_oauth_session')
         } else {
           // 일반 진입: getSession()으로 직접 세션 복구 (가장 신뢰성 높음)
-          const { data } = await supabase.auth.getSession()
+          const { data } = await withTimeout(
+            supabase.auth.getSession(),
+            INIT_TIMEOUT_MS,
+            'auth_get_session'
+          )
           user.value = data.session?.user ?? null
-          if (user.value) await fetchProfile().catch(() => { profileLoaded.value = false })
+          if (user.value) {
+            await withTimeout(fetchProfile(), PROFILE_TIMEOUT_MS, 'auth_fetch_profile')
+              .catch((error) => {
+                console.error('[auth:init:fetchProfile]', error)
+                profileLoaded.value = false
+              })
+          }
           else { profile.value = null; profileLoaded.value = true }
         }
-      } catch {
+      } catch (error) {
+        console.error('[auth:init]', error)
         user.value = null; profile.value = null; profileLoaded.value = true
       } finally {
         loading.value = false
         _initPromise = null
+        ensureAuthListener()
       }
-
-      // 이후 토큰 갱신 / 로그아웃 등 세션 변화를 반영하는 상시 리스너
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          user.value = null; profile.value = null; profileLoaded.value = true
-        } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-          user.value = session?.user ?? null
-          if (user.value) await fetchProfile().catch(() => {})
-        }
-      })
     })()
 
     return _initPromise
