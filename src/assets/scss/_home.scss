@@ -245,19 +245,6 @@
       }
     }
 
-    &::after {
-      content:"";
-      display:block;
-      width:24px; height:24px;
-      background: $text-disabled;
-      -webkit-mask-image: $ico-next;
-      mask-image: $ico-next;
-      -webkit-mask-size: auto 12px;
-      mask-size: auto 12px;
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
-      -webkit-mask-position: center;
-    }
   }
 }
 
@@ -297,7 +284,23 @@
 }
 
 .calendar-list__empty-cta {
+  display:inline-flex;
+  align-items:center;
   font-size: $font13;
   font-weight: $font-sb;
-  color: $primary;
+  color: $title;
+
+  &::after {
+    content:"";
+    display:block;
+    width:24px; height:24px;
+    background: $text-disabled;
+    -webkit-mask-image: $ico-next;
+    mask-image: $ico-next;
+    -webkit-mask-size: auto 12px;
+    mask-size: auto 12px;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+  }
 }
