@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import LoadingSkeleton from '@/components/common/LoadingSkeleton.vue'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
 
 const auth = useAuthStore()
+const router = useRouter()
 const PAGE_SIZE = 15
 const diaries = ref([])
 const loading = ref(false)
@@ -30,9 +32,6 @@ const currentPage = computed(() =>
 )
 const totalPages = computed(() =>
   Math.ceil(backupItems.value.length / PAGE_SIZE)
-)
-const moreButtonLabel = computed(() =>
-  `더보기 ${currentPage.value}/${totalPages.value}`
 )
 const selectedCount = computed(() => selectedIds.value.size)
 const isAllSelected = computed(() =>
@@ -100,9 +99,15 @@ function showMore() {
   )
 }
 
+function goHome() {
+  router.push('/main')
+}
+
 function formatPostDate(dateValue) {
   if (!dateValue) return ''
-  const target = new Date(dateValue)
+  const target = String(dateValue).includes('T')
+    ? new Date(dateValue)
+    : new Date(`${dateValue}T12:00:00`)
   const today = new Date()
   target.setHours(0, 0, 0, 0)
   today.setHours(0, 0, 0, 0)
@@ -249,7 +254,7 @@ async function deleteSelected() {
                 <p class="title">{{ post.content || '기록된 일기' }}</p>
                 <p class="sub-text">
                   <!--<span class="read">{{ post.record_date }}</span>-->
-                  <span class="date">{{ formatPostDate(post.created_at) }}</span>
+                  <span class="date">{{ formatPostDate(post.record_date || post.created_at) }}</span>
                 </p>
                 <!--<p class="sub-text">
                   <span class="speech">전체 일기 백업</span>
@@ -265,13 +270,18 @@ async function deleteSelected() {
               ></button>
             </li>
           </ul>
-          <div v-if="hasMoreItems" class="databack-more">
+          <div v-if="hasMoreItems" class="btn-content">
             <button
               type="button"
-              class="databack-more__button"
+              class="btn-more"
               @click="showMore"
             >
-              {{ moreButtonLabel }}
+              <p>
+                더보기
+                <span>
+                  (<em>{{ currentPage }}</em>/<span>{{ totalPages }}</span>)
+                </span>
+              </p>
             </button>
           </div>
         </section>
@@ -284,6 +294,11 @@ async function deleteSelected() {
         :secondary-disabled="deleting || downloading || selectedCount === 0"
         @click="downloadSelected"
         @secondary-click="deleteSelected"
+      />
+      <FooterCtp
+        v-else
+        label="홈으로"
+        @click="goHome"
       />
     </template>
 
@@ -301,13 +316,5 @@ async function deleteSelected() {
   padding: 1rem 0;
 }
 
-.databack-more__button {
-  border: 1px solid #e5e5e5;
-  border-radius: 999px;
-  background: #f8f8f8;
-  padding: 0.75rem 1.5rem;
-  color: #333;
-  font-weight: 600;
-}
 
 </style>

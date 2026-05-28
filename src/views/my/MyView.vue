@@ -81,7 +81,7 @@ async function handleSignOut() {
 }
 
 const menuItems = [
-  { label: '데이터 백업',          icon: 'backup' },
+  { label: '데이터 백업',          icon: 'backup', to: '/my/databack' },
   /*{ label: '공지사항',             icon: 'notice' },
   { label: '도움말 / FAQ',         icon: 'help'   },
   { label: '약관 및 개인정보 처리방침', icon: 'doc'    },*/
@@ -160,15 +160,16 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           <!--기타-->
           <div class="label-card">
             <div class="card-item my-list">
-              <button
+              <RouterLink
                   v-for="item in menuItems"
                   :key="item.label"
+                  :to="item.to"
                   class="my-list__item"
                 >
                 <span :class="['my-list__icon', `my-list__icon--${item.icon}`]"></span>
                 <span class="my-list__text">{{ item.label }}</span>
                 <span class="my-list__arrow"></span>
-              </button>
+              </RouterLink>
               <div class="my-list__item my-list__item--version">
                 <span class="my-list__icon my-list__icon--doc"></span>
                 <span class="my-list__text">앱 버전</span>
