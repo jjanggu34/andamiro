@@ -61,6 +61,8 @@ export const useDiaryStore = defineStore('diary', () => {
     const { emotion, content, summary, chat_messages } = payload
     const date = payload.date ?? new Date().toISOString().split('T')[0]
 
+    // 현재는 여러 기록을 허용하기 위해 insert를 유지한다.
+    // 추후 하루 1개 저장 정책이 필요해지면 user_id + record_date 기준 upsert로 전환한다.
     const insertPromise = supabase
       .from('emotion_records')
       .insert({

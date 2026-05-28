@@ -134,7 +134,8 @@ function formatPostDate(dateValue) {
                 <p class="sub-text">
                   <span v-if="activeTab === 'mine'" class="read">{{ post.read_count ?? 0 }}명이 읽었어요</span>
                   <span v-else class="n-name">{{ post.owner_nickname || '닉네임 없음' }}</span>
-                  <span class="date">{{ formatPostDate(post.last_activity) }}</span>
+                  <!-- 최근 댓글 활동일이 필요하면 post.last_activity를 별도 필드로 표시한다. -->
+                  <span class="date">{{ formatPostDate(post.created_at) }}</span>
                 </p>
                 <p class="sub-text">
                   <span class="speech">댓글 {{ post.comment_count }}개</span>

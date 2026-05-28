@@ -6,7 +6,7 @@ import AppTabBar from '@/components/layout/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDiaryStore } from '@/stores/diary'
 import { useExchangeStore } from '@/stores/exchange'
-import { usePushSubscription } from '@/composables/usePushSubscription'
+import { hasVapidPublicKey, usePushSubscription } from '@/composables/usePushSubscription'
 
 const auth      = useAuthStore()
 const diary     = useDiaryStore()
@@ -23,7 +23,7 @@ const avatarUrl = computed(() => auth.user?.user_metadata?.avatar_url ?? null)
 const pushEnabled = ref(false)
 
 async function checkPushStatus() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return
   if (Notification.permission !== 'granted') { pushEnabled.value = false; return }
   try {
     const reg = await navigator.serviceWorker.ready
@@ -36,7 +36,7 @@ async function checkPushStatus() {
 
 async function togglePush() {
   if (!auth.user?.id) return
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
     openModal({ icon: '🔔', title: '지원하지 않는 환경', description: '이 브라우저는 푸시 알림을 지원하지 않아요.' })
     return
   }
@@ -49,6 +49,14 @@ async function togglePush() {
       description: '이제 푸시 알림을 받지 않아요.',
     })
   } else {
+    if (!hasVapidPublicKey()) {
+      openModal({
+        icon: '🔔',
+        title: '푸시 설정이 필요해요',
+        description: 'VITE_VAPID_PUBLIC_KEY가 설정되지 않았어요. 관리자에게 문의해 주세요.',
+      })
+      return
+    }
     if (Notification.permission === 'denied') {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       const isIOS = /iPhone|iPad/i.test(navigator.userAgent)
@@ -58,6 +66,17 @@ async function togglePush() {
           : '홈 화면 앱 아이콘을 길게 누르기 → 앱 정보 → 권한 → 알림 → 허용으로 바꾼 뒤 앱을 다시 열어주세요.'
         : '주소창 옆 🔒 아이콘 → 사이트 설정 → 알림 → 허용으로 바꾼 뒤 다시 시도해 주세요.'
       openModal({ icon: '🔔', title: '알림이 차단되어 있어요', description: desc })
+      return
+    }
+    const permission = Notification.permission === 'default'
+      ? await Notification.requestPermission()
+      : Notification.permission
+    if (permission !== 'granted') {
+      openModal({
+        icon: '🔔',
+        title: '알림 권한이 필요해요',
+        description: '푸시 알림을 받으려면 알림 권한을 허용해 주세요.',
+      })
       return
     }
     pushEnabled.value = true

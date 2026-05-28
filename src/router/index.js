@@ -47,6 +47,9 @@ const router = createRouter({
       path: '/my',           name: 'my',        component: () => import('@/views/my/MyView.vue'),     meta: { requiresAuth: true },
     },
     {
+      path: '/my/databack',  name: 'databack', component: () => import('@/views/my/DataBack.vue'),   meta: { requiresAuth: true },
+    },
+    {
       path: '/my/chat-view', name: 'chat-view', component: () => import('@/views/my/ChatViewView.vue'), meta: { requiresAuth: true },
     },
   ],

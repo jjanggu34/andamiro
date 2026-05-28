@@ -156,6 +156,7 @@ async function saveAndGo(path, state = {}, options = {}) {
         date:    recordDate.value,
         emotion: chat.emotion,
         content: chat.content,
+        chat_messages: chat.messages,
         summary: JSON.stringify({
           score:           analysis.value?.score,
           mood:            analysis.value?.mood,

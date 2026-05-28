@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 
+export function hasVapidPublicKey() {
+  return Boolean(VAPID_PUBLIC_KEY)
+}
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
@@ -32,14 +36,13 @@ export function usePushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window))
       throw new Error('푸시를 지원하지 않는 브라우저예요.')
 
-    const permission = await Notification.requestPermission()
-    if (permission !== 'granted')
-      throw new Error('알림 권한이 거부되었어요. 브라우저 설정에서 허용해 주세요.')
-
-    const registration = await getRegistration()
+    if (Notification.permission !== 'granted')
+      throw new Error('알림 권한이 허용된 상태에서만 푸시를 설정할 수 있어요.')
 
     if (!VAPID_PUBLIC_KEY)
       throw new Error('푸시 키가 설정되지 않았어요. 관리자에게 문의해 주세요.')
+
+    const registration = await getRegistration()
 
     const existing = await registration.pushManager.getSubscription()
     const subscription = existing ?? await registration.pushManager.subscribe({
