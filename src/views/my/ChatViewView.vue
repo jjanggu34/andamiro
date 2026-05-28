@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { GaugeChart } from 'echarts/charts'
 import VChart from 'vue-echarts'
 import PageLayout from '@/components/layout/PageLayout.vue'
+import FooterCtp from '@/components/layout/FooterCtp.vue'
 import { useDiaryStore } from '@/stores/diary'
 
 use([CanvasRenderer, GaugeChart])
@@ -140,6 +141,10 @@ function animateScore(target) {
   requestAnimationFrame(tick)
 }
 
+function goHome() {
+  router.push('/main')
+}
+
 onMounted(async () => {
   const id = queryId()
   if (!id || typeof id !== 'string') {
@@ -235,6 +240,10 @@ onMounted(async () => {
         </template>
 
       </main>
+      <FooterCtp
+        label="홈으로"
+        @click="goHome"
+      />
     </template>
   </PageLayout>
 </template>
