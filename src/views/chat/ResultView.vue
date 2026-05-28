@@ -22,6 +22,7 @@ const { analyze } = useAnalysisAgent()
 const openModal   = inject('openModal')
 
 const today = new Date().toISOString().split('T')[0]
+const recordDate = computed(() => chat.recordDate ?? today)
 
 // ── 상태 ──
 const loading    = ref(true)
@@ -146,27 +147,29 @@ async function runAnalysis() {
 }
 
 // ── 저장 후 이동 ──
-async function saveAndGo(path, state = {}) {
+async function saveAndGo(path, state = {}, options = {}) {
   saving.value = true
   saveError.value = ''
   try {
-    await diary.save({
-      date:    today,
-      emotion: chat.emotion,
-      content: chat.content,
-      summary: JSON.stringify({
-        score:           analysis.value?.score,
-        mood:            analysis.value?.mood,
-        headline:        analysis.value?.headline,
-        metrics:         analysis.value?.metrics,
-        insight:         analysis.value?.insight,
-        summary:         analysis.value?.summary,
-        recommendations: analysis.value?.recommendations,
-        color:           analysis.value?.color,
-        tags:            analysis.value?.tags,
-        tips:            analysis.value?.tips,
-      }),
-    })
+    if (options.saveDiary !== false) {
+      await diary.save({
+        date:    recordDate.value,
+        emotion: chat.emotion,
+        content: chat.content,
+        summary: JSON.stringify({
+          score:           analysis.value?.score,
+          mood:            analysis.value?.mood,
+          headline:        analysis.value?.headline,
+          metrics:         analysis.value?.metrics,
+          insight:         analysis.value?.insight,
+          summary:         analysis.value?.summary,
+          recommendations: analysis.value?.recommendations,
+          color:           analysis.value?.color,
+          tags:            analysis.value?.tags,
+          tips:            analysis.value?.tips,
+        }),
+      })
+    }
     chat.reset()
     router.push({ path, state })
   } catch (e) {
@@ -183,7 +186,7 @@ const goExchange = () => openModal({
   title:       '교환일기를 작성할까요?',
   description: '오늘의 감정을 친구와 나눠보세요.',
   btnLabel:    '교환일기 작성하기',
-  onConfirm:   () => saveAndGo('/exchange/write', { summary: analysis.value?.summary ?? chat.content }),
+  onConfirm:   () => saveAndGo('/exchange/write', { summary: analysis.value?.summary ?? chat.content }, { saveDiary: false }),
 })
 
 onMounted(runAnalysis)

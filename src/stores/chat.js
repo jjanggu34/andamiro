@@ -6,6 +6,7 @@ export const useChatStore = defineStore('chat', () => {
   const emotionLabel = ref('')
   const content      = ref('')
   const messages     = ref([])
+  const recordDate   = ref(null)
 
   function addMessage(role, text, dataUrl = null) {
     messages.value.push({ role, text: text ?? '', dataUrl: dataUrl ?? null, time: new Date() })
@@ -16,7 +17,8 @@ export const useChatStore = defineStore('chat', () => {
     emotionLabel.value = ''
     content.value      = ''
     messages.value     = []
+    recordDate.value   = null
   }
 
-  return { emotion, emotionLabel, content, messages, addMessage, reset }
+  return { emotion, emotionLabel, content, messages, recordDate, addMessage, reset }
 })

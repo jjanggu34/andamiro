@@ -277,6 +277,7 @@ async function deleteSelected() {
         </section>
       </main>
       <FooterCtp
+        v-if="backupItems.length > 0"
         :label="downloading ? '다운로드 중…' : '다운로드하기'"
         :disabled="downloading || deleting || selectedCount === 0"
         :secondary-label="deleting ? '삭제 중…' : '데이터 삭제'"

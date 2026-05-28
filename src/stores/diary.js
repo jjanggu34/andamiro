@@ -58,7 +58,8 @@ export const useDiaryStore = defineStore('diary', () => {
     const uid = userId()
     if (!uid) throw new Error('not_authenticated')
 
-    const { date, emotion, content, summary, chat_messages } = payload
+    const { emotion, content, summary, chat_messages } = payload
+    const date = payload.date ?? new Date().toISOString().split('T')[0]
 
     const insertPromise = supabase
       .from('emotion_records')

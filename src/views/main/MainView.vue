@@ -5,10 +5,12 @@ import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDiaryStore } from '@/stores/diary'
+import { useChatStore } from '@/stores/chat'
 
 const router = useRouter()
 const auth   = useAuthStore()
 const diary  = useDiaryStore()
+const chat   = useChatStore()
 
 const now   = new Date()
 const year  = ref(now.getFullYear())
@@ -89,6 +91,11 @@ function goToRecord(rec) {
   router.push({ path: '/my/chat-view', query: { id: rec.id } })
 }
 function goToChat() {
+  chat.recordDate = selectedDay.value ? dateStr(selectedDay.value) : null
+  router.push('/chat/emotion')
+}
+function goToTodayChat() {
+  chat.recordDate = null
   router.push('/chat/emotion')
 }
 
@@ -129,7 +136,7 @@ onMounted(() => {
             <em>지금 마음을 가볍게 남겨보세요!</em>
           </div>
           <div class="btn-content">
-            <RouterLink to="/chat/emotion" class="btn-link">오늘 기록 남기러 가기</RouterLink>
+            <button type="button" class="btn-link" @click="goToTodayChat">오늘 기록 남기러 가기</button>
           </div>
         </div>
       </section>
