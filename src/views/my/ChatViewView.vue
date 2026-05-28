@@ -378,12 +378,12 @@ onMounted(async () => {
 
 .icon01::before {
   background: #ffa014;
-  mask-image: url("/public/assets/img/result/ico-01.svg");
-  -webkit-mask-image: url("/public/assets/img/result/ico-01.svg");
+  mask-image: url("/assets/img/result/ico-01.svg");
+  -webkit-mask-image: url("/assets/img/result/ico-01.svg");
 }
 .icon02::before {
   background: #7AC47D;
-  mask-image: url("/public/assets/img/result/ico-02.svg");
-  -webkit-mask-image: url("/public/assets/img/result/ico-02.svg");
+  mask-image: url("/assets/img/result/ico-02.svg");
+  -webkit-mask-image: url("/assets/img/result/ico-02.svg");
 }
 </style>

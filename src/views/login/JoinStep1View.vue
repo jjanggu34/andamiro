@@ -46,7 +46,7 @@ function next() {
 </template>
 
 <style scoped lang="scss">
-#bodyWrap.join {
+#bodyWrap.login {
   display: flex;
   flex-direction: column;
   height: 100dvh;
