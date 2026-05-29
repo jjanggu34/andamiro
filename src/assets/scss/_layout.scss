@@ -97,6 +97,7 @@ body:has(.wrap.has-tab-footer) {
     z-index: 5;
   }
 
+
   > #bodyWrap {
     flex: 1 1 auto;
     min-height: 0;
@@ -174,6 +175,29 @@ body:has(.wrap.has-tab-footer) {
       }
     }
   }
+
+  header:has(.header__right) {
+
+    h1 {
+      span {
+        margin-left: 0;
+      }
+    }
+
+    .header__right {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:45px;
+      text-align:center;
+
+      button {
+        color:$primary;
+        font-weight:$font-m;
+        font-size:$font12;
+      }
+    }
+  }
 }
 
 main {
@@ -226,8 +250,9 @@ footer {
     #text 상단 문구
 ---------------------------------------------*/
 .text-content .text-group {
+  gap:4px;
   p {
-    margin: 8px 0 0;
+    margin: 0;
     color: $text-default;
     font-size: $font14;
     font-weight: $font-l;
@@ -696,6 +721,8 @@ footer {
 
 
   .list-content {
+    gap:20px;
+
     ul{
       li{
         display:flex; gap:12px;
@@ -708,10 +735,10 @@ footer {
         }
 
         .list-box {
-          flex:1;
+          flex:1; width:calc(100% - 100px);
           p {
             display:block; min-height:20px; color:$text-disabled; font-size:$font12;
-            &.title { font-size:$font16; font-weight:$font-b; color:$title; }
+            &.title { font-size:$font16; font-weight:$font-b; color:$title; overflow:hidden; white-space: nowrap; text-overflow:ellipsis; }
             &.sub-text { display:flex; gap:8px; align-items:center; }
             .read {  padding-left:20px; background:url(/public/assets/img/com/ico-eye.svg) no-repeat left center / 16px;  }
             .date {
@@ -729,6 +756,26 @@ footer {
         }
 
       }
+    }
+
+    .btn-content {
+      padding-bottom:30px;
+
+      .btn-more {
+        font-size: $font14;
+        font-weight:$font-m;
+
+        span {
+          color:$text-disabled;
+
+          em {
+            color:$text-sub;
+          }
+
+        }
+
+      }
+
     }
   }
 }
