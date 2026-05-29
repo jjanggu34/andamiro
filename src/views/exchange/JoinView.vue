@@ -258,6 +258,11 @@ async function join() {
     display: flex;
     align-items: center;
     margin-top: 4px;
+
+    p {
+      width: 100%;
+    }
+
   }
 
   &__field-icon {

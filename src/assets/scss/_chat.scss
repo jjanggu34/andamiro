@@ -95,6 +95,7 @@ body:has(#bodyWrap.emotion) > .wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0;
     max-width: 100%;
     min-height: 0;
     padding: 0;
@@ -417,10 +418,10 @@ body:has(#bodyWrap.emotion) > .wrap {
 // ── 컴포저 ──
 .chat-composer {
   flex: 0 0 auto;
-  padding: 10px 16px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  padding: 20px 16px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
   background: $white;
-  border-top: 1px solid $border;
+  border-top: 1px solid $border-e;
 }
 .chat-composer__row {
   display: flex;
