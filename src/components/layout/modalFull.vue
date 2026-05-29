@@ -79,7 +79,7 @@ const slots = useSlots()
     position: absolute;
     right:10px;
     width:40px; height:40px;
-    background:url("/public/assets/img/com/ico_close.svg") no-repeat center / 18px;
+    background:url("/assets/img/com/ico_close.svg") no-repeat center / 18px;
   }
 
   &__body {

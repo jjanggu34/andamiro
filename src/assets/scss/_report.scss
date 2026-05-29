@@ -179,8 +179,8 @@
                 // ── 아이콘 ──
           &.icon01::before {
             background: $primary;
-            mask-image: url("/public/assets/img/report/ico-card-item1.svg");
-            -webkit-mask-image: url("/public/assets/img/report/ico-card-item1.svg");
+            mask-image: url("/assets/img/report/ico-card-item1.svg");
+            -webkit-mask-image: url("/assets/img/report/ico-card-item1.svg");
             }
 
           }
@@ -229,5 +229,4 @@
 
     }
 }
-
 

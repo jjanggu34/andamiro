@@ -260,7 +260,7 @@ async function onSave() {
     line-height: 1;
     text-align:center;
 
-    &::before { content:""; display:block; width:20px; height:20px; background:url("/public/assets/img/com/ico-folder.svg") no-repeat center / 100%; }
+    &::before { content:""; display:block; width:20px; height:20px; background:url("/assets/img/com/ico-folder.svg") no-repeat center / 100%; }
   }
 
   &__text {

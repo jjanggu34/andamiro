@@ -203,8 +203,8 @@ onMounted(async () => {
           background-color:#fff;
           &.icon01::before {
             background: #74A37B;
-            mask-image: url("/public/assets/img/advice/ico-01.svg");
-            -webkit-mask-image: url("/public/assets/img/advice/ico-01.svg");
+            mask-image: url("/assets/img/advice/ico-01.svg");
+            -webkit-mask-image: url("/assets/img/advice/ico-01.svg");
             }
       }
         }
@@ -233,7 +233,7 @@ onMounted(async () => {
   }
   .fortune-text {
     display:flex; align-items:center; width:310px; height:210px; margin:0 auto; position:relative;
-    background:url("/public/assets/img/advice/popup-bg-fortune2.png") no-repeat center / 310px auto;
+    background:url("/assets/img/advice/popup-bg-fortune2.png") no-repeat center / 310px auto;
     p { padding:0 20px; width:75%; font-size:$font18; color:$title; }
    }
 }

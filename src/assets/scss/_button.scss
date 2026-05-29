@@ -74,8 +74,8 @@ button:disabled {
     width: 24px;
     height: 24px;
     background-color: $primary;
-    mask-image: url("/public/assets/img/com/ico-link.svg");
-    -webkit-mask-image: url("/public/assets/img/com/ico-link.svg");
+    mask-image: url("/assets/img/com/ico-link.svg");
+    -webkit-mask-image: url("/assets/img/com/ico-link.svg");
     mask-repeat: no-repeat;
     mask-size: 18px auto;
     mask-position: center;
@@ -322,4 +322,3 @@ main + footer {
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
-

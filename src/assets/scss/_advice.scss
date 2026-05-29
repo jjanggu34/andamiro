@@ -16,7 +16,7 @@
       text-align: left;
       font-family: inherit;
       border-radius: 16px;
-      background: #e8ecee url("/public/assets/img/advice/ico_fortune.png") no-repeat 16px center / 32px 32px;
+      background: #e8ecee url("/assets/img/advice/ico_fortune.png") no-repeat 16px center / 32px 32px;
       color: $text-default;
       font-weight: 400;
     }
@@ -25,7 +25,7 @@
       margin-top: 28px;
       padding-right: 16px;
       min-height: 110px;
-      background: url("/public/assets/img/advice/bg_fortune.png") no-repeat right center / 110px;
+      background: url("/assets/img/advice/bg_fortune.png") no-repeat right center / 110px;
       .text-group {
         h2 { font-size:$font20; font-weight:$font-sb; }
         .advice-hero__score {
