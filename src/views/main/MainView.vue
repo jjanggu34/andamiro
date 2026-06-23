@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
@@ -15,6 +15,8 @@ const chat   = useChatStore()
 const now   = new Date()
 const year  = ref(now.getFullYear())
 const month = ref(now.getMonth()) // 0-based
+const calendarLoading = ref(false)
+let fetchSeq = 0
 
 const yearMonth  = computed(() => `${year.value}-${String(month.value + 1).padStart(2, '0')}`)
 const monthLabel = computed(() => `${year.value}.${String(month.value + 1).padStart(2, '0')}`)
@@ -100,28 +102,37 @@ function goToTodayChat() {
 }
 
 // ── 월 이동 ──
+async function fetchCalendarMonth(ym) {
+  if (!auth.user) return
+
+  const seq = ++fetchSeq
+  calendarLoading.value = true
+
+  try {
+    await diary.fetchByMonth(ym)
+  } finally {
+    if (seq === fetchSeq) calendarLoading.value = false
+  }
+}
+
 function prevMonth() {
   if (month.value === 0) { year.value--; month.value = 11 }
   else month.value--
   selectedDay.value = null
-  diary.fetchByMonth(yearMonth.value)
 }
 function nextMonth() {
   if (month.value === 11) { year.value++; month.value = 0 }
   else month.value++
   selectedDay.value = null
-  diary.fetchByMonth(yearMonth.value)
 }
 
-// auth.user가 준비된 시점에 fetch (타이밍 문제 방지)
-watch(() => auth.user, (user) => {
-  if (user) diary.fetchByMonth(yearMonth.value)
-}, { immediate: true })
-
-// 페이지 재진입 시 최신 데이터 보장
-onMounted(() => {
-  if (auth.user) diary.fetchByMonth(yearMonth.value)
-})
+watch(
+  [() => auth.user, yearMonth],
+  ([user, ym]) => {
+    if (user) fetchCalendarMonth(ym)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -163,10 +174,10 @@ onMounted(() => {
             </div>
 
             <!-- 날짜 그리드 -->
-            <div class="dayflow-cal__grid">
+            <div class="dayflow-cal__grid" :class="{ 'is-loading': calendarLoading }">
               <button
                 v-for="(day, i) in calendarDays"
-                :key="i"
+                :key="`${yearMonth}-${i}-${day ?? 'empty'}`"
                 type="button"
                 class="dayflow-cal__day"
                 :class="{
