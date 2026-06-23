@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
@@ -11,6 +11,7 @@ const router = useRouter()
 const auth   = useAuthStore()
 const diary  = useDiaryStore()
 const chat   = useChatStore()
+const openModal = inject('openModal')
 
 const now   = new Date()
 const year  = ref(now.getFullYear())
@@ -96,7 +97,25 @@ function goToChat() {
   chat.recordDate = selectedDay.value ? dateStr(selectedDay.value) : null
   router.push('/chat/emotion')
 }
+function hasTodayDraft() {
+  const today = new Date().toISOString().split('T')[0]
+  return chat.messages.length > 0 && (!chat.recordDate || chat.recordDate === today)
+}
 function goToTodayChat() {
+  if (hasTodayDraft()) {
+    if (openModal) {
+      openModal({
+        title: '오늘 작성중인 기록이 있습니다',
+        description: '저장하지 않은 기록이 있어요. 이어서 작성할까요?',
+        btnLabel: '작성중인 기록으로 이동',
+        onConfirm: () => router.push('/chat'),
+      })
+    } else {
+      router.push('/chat')
+    }
+    return
+  }
+
   chat.recordDate = null
   router.push('/chat/emotion')
 }

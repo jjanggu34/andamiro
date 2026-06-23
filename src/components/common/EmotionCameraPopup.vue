@@ -297,7 +297,8 @@ async function complete() {
     emotionLabel: top.label,
     score: top.value,
     expressions: { ...expressions.value },
-    capturedImageUrl: capture?.url ?? '',
+    capturedImageUrl: capture?.url ?? capture?.dataUrl ?? '',
+    capturedImageDataUrl: capture?.dataUrl ?? capture?.url ?? '',
     capturedImageMeta: capture?.meta ?? null,
   })
   close()
@@ -332,17 +333,28 @@ function captureCompressedFrame() {
   context.translate(width, 0)
   context.scale(-1, 1)
   context.drawImage(video, 0, 0, sourceWidth, sourceHeight, 0, 0, width, height)
+  const dataUrl = canvas.toDataURL('image/jpeg', CAPTURE_QUALITY)
 
   return new Promise((resolve) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          resolve(null)
+          resolve({
+            url: dataUrl,
+            dataUrl,
+            meta: {
+              width,
+              height,
+              size: 0,
+              type: 'image/jpeg',
+            },
+          })
           return
         }
 
         resolve({
           url: URL.createObjectURL(blob),
+          dataUrl,
           meta: {
             width,
             height,

@@ -39,7 +39,7 @@ const { send: sendN8n, isEnabled: useN8n } = useChatN8n()
 const inputText    = ref('')
 const chatThread   = ref(null)
 const composerRef  = ref(null)
-const showIntro    = ref(true)
+const showIntro    = ref(chat.messages.length === 0)
 const isThinking   = ref(false)
 const pendingImage = ref(null)   // { base64, mediaType, dataUrl }
 const isVoiceOn    = ref(false)
@@ -164,12 +164,17 @@ function pickFromCamera() {
 }
 function handleCameraComplete(result) {
   showEmotionCamera.value = false
-  if (result.capturedImageUrl) {
-    cameraCaptures.push({
-      url: result.capturedImageUrl,
-      meta: result.capturedImageMeta,
-    })
-    chat.addMessage('user', '', result.capturedImageUrl)
+  const capturedImage = result.capturedImageDataUrl || result.capturedImageUrl
+
+  if (capturedImage) {
+    if (result.capturedImageUrl?.startsWith('blob:')) {
+      cameraCaptures.push({
+        url: result.capturedImageUrl,
+        meta: result.capturedImageMeta,
+      })
+    }
+
+    chat.addMessage('user', '', capturedImage)
     showIntro.value = false
     scrollToBottom()
   }
