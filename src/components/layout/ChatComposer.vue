@@ -173,6 +173,11 @@ defineExpose({
   border-radius: $radius-r;
   padding: 0 10px 0 14px;
   gap: 4px;
+
+  &:focus-within {
+    outline: 2px solid $primary;
+    outline-offset: 2px;
+  }
 }
 
 .chat-composer__input {
@@ -180,6 +185,7 @@ defineExpose({
   background: none;
   border: none;
   outline: none;
+  box-shadow: none;
   resize: none;
   overflow-y: auto;
   font-size: $font14;
@@ -187,6 +193,12 @@ defineExpose({
   color: $title;
   font-family: inherit;
   max-height: 60px;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 
   &::placeholder {
     color: $text-disabled;
