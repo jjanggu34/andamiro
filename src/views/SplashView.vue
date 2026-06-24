@@ -35,6 +35,7 @@ watch(
     align-items: center;
     justify-content: center;
     height: 100%;
+    background:#fdfdfd;
 
     .splash-content {
       display: flex;
