@@ -168,6 +168,23 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateProfile(payload) {
+    if (!user.value?.id) throw new Error('로그인이 필요해요.')
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', user.value.id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+
+    profile.value = data
+    profileLoaded.value = true
+    return data
+  }
+
   async function exchangeOAuthCode(code) {
     try {
       await supabase.auth.exchangeCodeForSession(code)
@@ -234,5 +251,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isNewUser = () => user.value && profileLoaded.value && !profile.value
 
-  return { user, profile, loading, profileLoaded, init, exchangeOAuthCode, fetchProfile, signOut, deleteAccount, signInWithGoogle, isNewUser }
+  return { user, profile, loading, profileLoaded, init, exchangeOAuthCode, fetchProfile, updateProfile, signOut, deleteAccount, signInWithGoogle, isNewUser }
 })

@@ -2,14 +2,10 @@
 import { useJoinStore } from '@/stores/join'
 import { useRouter } from 'vue-router'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
+import ProfileForm from '@/views/my/ProfileForm.vue'
 
 const join   = useJoinStore()
 const router = useRouter()
-
-const genders = [
-  { value: '남성', img: '/assets/img/login/img-m.png' },
-  { value: '여성', img: '/assets/img/login/img-w.png' },
-]
 
 function next() {
   if (!join.gender) return
@@ -28,31 +24,11 @@ function next() {
               <span>맞춤 감정 분석을 위해 필요해요</span>
             </div>
           </div>
-          <div class="form-content">
-            <div class="form-group">
-              <fieldset class="tyep-button ico">
-                <legend class="sr-only">성별 선택</legend>
-                <label
-                  v-for="g in genders"
-                  :key="g.value"
-                  class="radio"
-                  :for="`joinGender${g.value}`"
-                >
-                  <input
-                    type="radio"
-                    :id="`joinGender${g.value}`"
-                    name="joinGender"
-                    :value="g.value"
-                    v-model="join.gender"
-                  />
-                  <div class="radio-face">
-                    <img :src="g.img" :alt="g.value" />
-                    <span class="radio-text">{{ g.value }}</span>
-                  </div>
-                </label>
-              </fieldset>
-            </div>
-          </div>
+          <ProfileForm
+            v-model:gender="join.gender"
+            :fields="['gender']"
+            id-prefix="join"
+          />
         </section>
       </main>
       <FooterCtp label="다음" :disabled="!join.gender" @click="next" />

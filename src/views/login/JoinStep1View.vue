@@ -2,6 +2,7 @@
 import { useJoinStore } from '@/stores/join'
 import { useRouter } from 'vue-router'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
+import ProfileForm from '@/views/my/ProfileForm.vue'
 
 const join   = useJoinStore()
 const router = useRouter()
@@ -23,20 +24,12 @@ function next() {
               <span>안다미로가 부를 이름이에요</span>
             </div>
           </div>
-          <div class="form-content">
-              <div class="form-group">
-                <label class="sr-only" for="joinNickname">닉네임</label>
-                <input
-                  id="joinNickname"
-                  v-model="join.nickname"
-                  type="text"
-                  placeholder="닉네임"
-                  maxlength="10"
-                  @keyup.enter="next"
-                />
-                <span class="input-count">{{ join.nickname.length }}/10</span>
-              </div>
-            </div>
+          <ProfileForm
+            v-model:nickname="join.nickname"
+            :fields="['nickname']"
+            id-prefix="join"
+            @keyup.enter="next"
+          />
         </section>
       </main>
 
@@ -44,4 +37,3 @@ function next() {
     </div>
   </div>
 </template>
-

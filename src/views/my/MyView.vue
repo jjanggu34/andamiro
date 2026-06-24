@@ -169,7 +169,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
                 <strong class="my-profile__name">{{ nickname }}</strong>
                 <span class="my-profile__email">{{ email }}</span>
               </div>
-              <button class="my-profile__edit">프로필 편집</button>
+              <RouterLink to="/my/profile" class="my-profile__edit">프로필 편집</RouterLink>
             </div>
             <!--나의 기록요약-->
             <div class="label-card">
