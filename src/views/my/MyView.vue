@@ -100,9 +100,19 @@ async function handleSignOut() {
   router.push('/login')
 }
 
+function handleDeleteAccountClick() {
+  if (!openModal || deletingAccount.value) return
+
+  openModal({
+    title: '회원탈퇴 시 모든 기록이 삭제됩니다',
+    description: '삭제된 기록은 복구할 수 없어요. 정말 탈퇴할까요?',
+    btnLabel: '탈퇴하기',
+    onConfirm: handleDeleteAccount,
+  })
+}
+
 async function handleDeleteAccount() {
   if (deletingAccount.value) return
-  if (!window.confirm('회원탈퇴 시 모든 기록이 삭제되며 복구할 수 없어요. 정말 탈퇴할까요?')) return
 
   deletingAccount.value = true
   try {
@@ -222,7 +232,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           <div class="button-content">
             <button class="text-button" @click="handleSignOut">로그아웃</button>
             <span class="line"></span>
-            <button class="text-button" :disabled="deletingAccount" @click="handleDeleteAccount">
+            <button class="text-button" :disabled="deletingAccount" @click="handleDeleteAccountClick">
               {{ deletingAccount ? '탈퇴 처리 중...' : '회원탈퇴' }}
             </button>
           </div>
