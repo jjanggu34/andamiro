@@ -44,9 +44,10 @@ $img-end:   url("/assets/img/login/img-end.png");
   }
 
   .text-content {
+    padding:0;
     .text-group {
       em {
-        font-size: $font28;
+        font-size: $font26;
       }
         span {
           font-size: $font16;
@@ -84,8 +85,8 @@ $img-end:   url("/assets/img/login/img-end.png");
   }
 
   .form-content {
-    margin-top: 32px;
-    padding: 0 24px;
+    margin-top: 27px;
+    padding:0;
 
     fieldset.tyep-button.ico {
       label.radio {
