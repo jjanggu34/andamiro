@@ -45,6 +45,10 @@ onMounted(async () => {
   }
 })
 
+async function goToMyAfterSave() {
+  await router.replace({ name: 'my' })
+}
+
 async function saveProfile() {
   if (!canSave.value) return
 
@@ -61,10 +65,10 @@ async function saveProfile() {
       openModal({
         title: '프로필이 수정되었습니다',
         btnLabel: '확인',
-        onConfirm: () => router.replace('/my'),
+        onConfirm: goToMyAfterSave,
       })
     } else {
-      await router.replace('/my')
+      await goToMyAfterSave()
     }
   } catch (saveError) {
     console.error('[profile:update]', saveError)
