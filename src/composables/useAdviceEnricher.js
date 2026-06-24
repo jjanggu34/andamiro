@@ -12,7 +12,7 @@ export function useAdviceEnricher() {
       `아래 JSON 스키마로만 응답하세요:\n` +
       `{"color":"오늘의 추천 컬러와 의미 1~2문장(예: 오늘은 초록(그린)이 당신에게 따뜻한 안정감을 가져다줄 거예요! 💚)",` +
       `"tags":["감정 키워드1","감정 키워드2","감정 키워드3"],` +
-      `"tips":[{"title":"오늘의 감정 케어","body":"오늘 감정 상태에 맞는 구체적인 돌봄 방법 한 문장"},{"title":"내일을 위한 루틴","body":"내일 기분 좋게 시작할 수 있는 실천 팁 한 문장"}]}`
+      `"tips":[{"title":"오늘의 감정 케어","body":"오늘 감정 상태에 맞는 구체적인 돌봄 방법 한 문장"},{"title":"내일을 위한 조언","body":"내일 기분 좋게 시작할 수 있는 실천 팁 한 문장"}]}`
 
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token

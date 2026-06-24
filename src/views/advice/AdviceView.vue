@@ -79,6 +79,7 @@ const adviceText = computed(() =>
 const colorText = computed(() => parsed.value?.color ?? '')
 const tags = computed(() => parsed.value?.tags ?? [])
 const tips = computed(() => parsed.value?.tips ?? [])
+const tipTitle = title => title === '내일을 위한 루틴' ? '내일을 위한 조언' : title
 
 onMounted(async () => {
   record.value = await diary.getByDate(todayStr)
@@ -135,7 +136,7 @@ onMounted(async () => {
               <p class="advice-ai-body">{{ adviceText }}</p>
               <template v-if="tips.length">
                 <div v-for="tip in tips" :key="tip.title" class="card-tips">
-                  <h4>{{ tip.title }}</h4>
+                  <h4>{{ tipTitle(tip.title) }}</h4>
                   <p>{{ tip.body }}</p>
                 </div>
               </template>
