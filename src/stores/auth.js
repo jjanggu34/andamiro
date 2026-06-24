@@ -191,11 +191,25 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function deleteAccount() {
-    const { error } = await supabase.functions.invoke('delete-account', {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    if (sessionError || !accessToken) throw new Error('로그인이 필요해요.')
+
+    const { data, error } = await supabase.functions.invoke('delete-account', {
       method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
     })
 
-    if (error) throw error
+    if (error) {
+      let message = error.message
+      try {
+        const response = await error.context?.json()
+        message = response?.details || response?.error || message
+      } catch { /* response body is not available */ }
+      throw new Error(message)
+    }
+    if (data?.error) throw new Error(data.details || data.error)
+    if (!data?.ok) throw new Error('회원탈퇴에 실패했어요.')
 
     // The server has removed the auth user, so clear the local session even if
     // the automatic SIGNED_OUT event has not arrived yet.
