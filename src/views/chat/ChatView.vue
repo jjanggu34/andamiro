@@ -45,6 +45,7 @@ const pendingImage = ref(null)   // { base64, mediaType, dataUrl }
 const isVoiceOn    = ref(false)
 const showAttachModal = ref(false)
 const showEmotionCamera = ref(false)
+const showUnsavedBackModal = ref(false)
 const aiChips      = ref([])     // n8n이 반환한 동적 팔로우업 칩
 
 let recognition       = null
@@ -56,6 +57,7 @@ let cameraCaptures = []
 const greetingLine2 = computed(() => GREETING_LINE2[chat.emotion] ?? GREETING_LINE2.good)
 const starterChips  = computed(() => STARTER_CHIPS[chat.emotion] ?? STARTER_CHIPS.good)
 const canSend       = computed(() => inputText.value.trim().length > 0 && !isThinking.value)
+const hasUnsavedChat = computed(() => chat.messages.length > 0 || !!chat.emotion)
 
 // ── 날짜 / 시간 ────────────────────────────────────────────────
 const DAY_KO = ['일', '월', '화', '수', '목', '금', '토']
@@ -153,6 +155,19 @@ function finishDiary() {
   if (isThinking.value) return
   chat.content = chat.messages.filter(m => m.role === 'user' && m.text).map(m => m.text).join('\n')
   router.push('/chat/result')
+}
+
+function handleBackClick() {
+  if (hasUnsavedChat.value) {
+    showUnsavedBackModal.value = true
+    return
+  }
+  router.push('/main')
+}
+function closeUnsavedBackModal() { showUnsavedBackModal.value = false }
+function confirmUnsavedBack() {
+  showUnsavedBackModal.value = false
+  router.push('/main')
 }
 
 // ── 이미지 첨부 ────────────────────────────────────────────────
@@ -293,7 +308,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PageLayout title="오늘의 일기" back-to="/main">
+  <PageLayout title="오늘의 일기" back-to="/main" intercept-back @back="handleBackClick">
     <template #body>
       <main class="chat-thread" ref="chatThread" role="main">
         <div class="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
@@ -420,6 +435,28 @@ onBeforeUnmount(() => {
       />
     </template>
   </PageLayout>
+
+  <ModalBottom
+    :show="showUnsavedBackModal"
+    title="조금만 더 쓰면 완성이에요!"
+    @close="closeUnsavedBackModal"
+  >
+    <template #description>
+      나가면 작성하던 내용이 저장되지 않아요<br />
+      지금의 감정을 조금만 더 기록해 볼까요?
+    </template>
+    <div class="img-content">
+      <p class="img-group ok-diary">
+        <img src="/assets/img/emotion/img-none.png" style="height:156px;" alt="" />
+      </p>
+    </div>
+    <template #footer>
+      <div class="button-content--duo">
+        <button class="btn-ctp--secondary" @click="confirmUnsavedBack">다음에 하기</button>
+        <button class="btn-ctp" @click="closeUnsavedBackModal">계속 작성하기</button>
+      </div>
+    </template>
+  </ModalBottom>
 
   <ModalBottom :show="showAttachModal" title="어떻게 기록할까요?" title-class="title-l" @close="showAttachModal = false">
     <template #footer>

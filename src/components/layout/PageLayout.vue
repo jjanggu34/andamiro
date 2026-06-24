@@ -8,12 +8,17 @@ const props = defineProps({
   bodyClass:  { type: String,  default: '' },
   hideHeader: { type: Boolean, default: false },
   hideBack:   { type: Boolean, default: false },
+  interceptBack: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['action'])
+const emit = defineEmits(['action', 'back'])
 const router = useRouter()
 
 function goBack() {
+  if (props.interceptBack) {
+    emit('back')
+    return
+  }
   if (props.backTo) router.push(props.backTo)
   else router.back()
 }

@@ -18,7 +18,9 @@ defineEmits(['close', 'confirm'])
           <div class="modal-bottom__body">
             <span v-if="icon" class="modal-bottom__icon">{{ icon }}</span>
             <strong v-if="title" :class="['modal-bottom__title', titleClass]">{{ title }}</strong>
-            <p v-if="description" class="modal-bottom__desc">{{ description }}</p>
+            <p v-if="description || $slots.description" class="modal-bottom__desc">
+              <slot name="description">{{ description }}</slot>
+            </p>
             <slot />
           </div>
           <div class="modal-bottom__footer">
