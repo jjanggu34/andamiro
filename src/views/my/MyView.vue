@@ -3,6 +3,7 @@ import { computed, inject, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import AppTabBar from '@/components/layout/AppTabBar.vue'
+import ProfileView from '@/views/my/ProfileView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useDiaryStore } from '@/stores/diary'
 import { useExchangeStore } from '@/stores/exchange'
@@ -22,6 +23,10 @@ const avatarUrl = computed(() => auth.user?.user_metadata?.avatar_url ?? null)
 
 const pushEnabled = ref(false)
 const deletingAccount = ref(false)
+const showProfileEditor = ref(false)
+
+function openProfileEditor() { showProfileEditor.value = true }
+function closeProfileEditor() { showProfileEditor.value = false }
 
 async function checkPushStatus() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return
@@ -143,7 +148,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
 
 
 <template>
-  <PageLayout title="마이" class="my">
+  <PageLayout v-if="!showProfileEditor" title="마이" class="my">
     <template #body>
       <main class="my-page">
         <div class="my-body">
@@ -169,7 +174,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
                 <strong class="my-profile__name">{{ nickname }}</strong>
                 <span class="my-profile__email">{{ email }}</span>
               </div>
-              <RouterLink to="/my/profile" class="my-profile__edit">프로필 편집</RouterLink>
+              <button class="my-profile__edit" @click="openProfileEditor">프로필 편집</button>
             </div>
             <!--나의 기록요약-->
             <div class="label-card">
@@ -182,7 +187,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
                     </li>
                     <li >
                       <em>{{ exchange.myExchangeCount }}</em>
-                      <span>교환일기</span>
+                      <span>공유일기</span>
                     </li>
                     <li class="my-stats__item">
                       <em>{{ diary.stats.monthly }}</em>
@@ -196,7 +201,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
               <div class="card-item my-list">
                 <RouterLink to="/exchange" class="my-list__item">
                     <span class="my-list__icon my-list__icon--exchange"></span>
-                    <span class="my-list__text">교환 일기</span>
+                    <span class="my-list__text">공감 일기</span>
                 </RouterLink>
                   <button class="my-list__item" @click="togglePush">
                     <span class="my-list__icon my-list__icon--notice"></span>
@@ -246,6 +251,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
       <AppTabBar />
     </template>
   </PageLayout>
+  <ProfileView v-else @close="closeProfileEditor" />
 </template>
 
 <style scoped lang="scss">

@@ -1,14 +1,13 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
 import ProfileForm from '@/views/my/ProfileForm.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
-const router = useRouter()
 const openModal = inject('openModal')
+const emit = defineEmits(['close'])
 
 const loading = ref(true)
 const saving = ref(false)
@@ -45,9 +44,7 @@ onMounted(async () => {
   }
 })
 
-async function goToMyAfterSave() {
-  await router.replace({ name: 'my' })
-}
+function closeProfile() { emit('close') }
 
 async function saveProfile() {
   if (!canSave.value) return
@@ -65,10 +62,10 @@ async function saveProfile() {
       openModal({
         title: '프로필이 수정되었습니다',
         btnLabel: '확인',
-        onConfirm: goToMyAfterSave,
+        onConfirm: closeProfile,
       })
     } else {
-      await goToMyAfterSave()
+      closeProfile()
     }
   } catch (saveError) {
     console.error('[profile:update]', saveError)
@@ -80,34 +77,48 @@ async function saveProfile() {
 </script>
 
 <template>
-  <PageLayout title="프로필 수정" back-to="/my" body-class="profile-edit-page">
-    <template #body>
-      <main class="profile-edit-page__main">
-        <p v-if="loading" class="profile-edit-page__status">프로필을 불러오는 중...</p>
-        <template v-else>
-          <ProfileForm
-            v-model:nickname="form.nickname"
-            v-model:age-group="form.ageGroup"
-            v-model:gender="form.gender"
-            show-labels
-            id-prefix="profileEdit"
-          />
-          <p v-if="error" class="profile-edit-page__error" role="alert">{{ error }}</p>
-        </template>
-      </main>
-    </template>
-    <template #footer>
-      <FooterCtp
-        :label="saving ? '저장 중...' : '저장'"
-        :disabled="loading || !canSave"
-        @click="saveProfile"
-      />
-    </template>
-  </PageLayout>
+  <div class="profile-popup" role="dialog" aria-modal="true" aria-label="프로필 수정">
+    <PageLayout
+      title="프로필 수정"
+      body-class="profile-edit-page"
+      intercept-back
+      @back="closeProfile"
+    >
+      <template #body>
+        <main class="profile-edit-page__main">
+          <p v-if="loading" class="profile-edit-page__status">프로필을 불러오는 중...</p>
+          <template v-else>
+            <ProfileForm
+              v-model:nickname="form.nickname"
+              v-model:age-group="form.ageGroup"
+              v-model:gender="form.gender"
+              show-labels
+              id-prefix="profileEdit"
+            />
+            <p v-if="error" class="profile-edit-page__error" role="alert">{{ error }}</p>
+          </template>
+        </main>
+      </template>
+      <template #footer>
+        <FooterCtp
+          :label="saving ? '저장 중...' : '저장'"
+          :disabled="loading || !canSave"
+          @click="saveProfile"
+        />
+      </template>
+    </PageLayout>
+  </div>
 </template>
 
 <style scoped lang="scss">
 @use '@/assets/scss/tokens' as *;
+
+.profile-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: $white;
+}
 
 .profile-edit-page__main {
   padding: 24px 20px;
