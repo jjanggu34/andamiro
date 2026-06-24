@@ -77,6 +77,7 @@ const slots = useSlots()
     cursor: pointer;
     padding: 4px;
     position: absolute;
+    top:10px;
     right:10px;
     width:40px; height:40px;
     background:url("/assets/img/com/ico_close.svg") no-repeat center / 18px;

@@ -180,7 +180,7 @@ onMounted(async () => {
           alt="포춘쿠키"
         />
         <p v-show="!isOpened" class="text box">
-          쿠키를 눌려 오늘의<br />운세를 확인하세요
+          쿠키를 눌러 오늘의<br />운세를 확인하세요
         </p>
         <div v-show="isOpened" class="fortune-text">
           <p>{{ fortuneText }}</p>
