@@ -188,7 +188,7 @@ defineExpose({
   box-shadow: none;
   resize: none;
   overflow-y: auto;
-  font-size: $font14;
+  font-size: max(16px, $font16);
   line-height: 1.5;
   color: $title;
   font-family: inherit;
