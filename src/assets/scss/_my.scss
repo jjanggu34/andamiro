@@ -1,7 +1,7 @@
 @use 'tokens' as *;
 
 .my                         { background: linear-gradient(180deg, #3D78F3 0%, #77A1F9 50%, #FFF 100%); }
-.my #headerWrap             { background: transparent; padding: 17px 24px; }
+.my #headerWrap             { background: transparent; padding: 17px 24px 17px 10px; }
 .my #headerWrap h1 span     { display: inline-flex; align-items: center; color:$white; }
 .my #headerWrap header button.header__back span { background:$white; }
 /* ── 본문 ── */
