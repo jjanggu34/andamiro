@@ -21,6 +21,7 @@ const initial   = computed(() => nickname.value.charAt(0).toUpperCase())
 const avatarUrl = computed(() => auth.user?.user_metadata?.avatar_url ?? null)
 
 const pushEnabled = ref(false)
+const deletingAccount = ref(false)
 
 async function checkPushStatus() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return
@@ -97,6 +98,26 @@ async function togglePush() {
 async function handleSignOut() {
   await auth.signOut()
   router.push('/login')
+}
+
+async function handleDeleteAccount() {
+  if (deletingAccount.value) return
+  if (!window.confirm('회원탈퇴 시 모든 기록이 삭제되며 복구할 수 없어요. 정말 탈퇴할까요?')) return
+
+  deletingAccount.value = true
+  try {
+    await auth.deleteAccount()
+    await router.replace('/login')
+  } catch (error) {
+    console.error('[account:delete]', error)
+    openModal({
+      icon: '⚠️',
+      title: '회원탈퇴에 실패했어요',
+      description: '잠시 후 다시 시도해 주세요. 문제가 계속되면 관리자에게 문의해 주세요.',
+    })
+  } finally {
+    deletingAccount.value = false
+  }
 }
 
 const menuItems = [
@@ -201,7 +222,9 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
           <div class="button-content">
             <button class="text-button" @click="handleSignOut">로그아웃</button>
             <span class="line"></span>
-            <button class="text-button">회원탈퇴</button>
+            <button class="text-button" :disabled="deletingAccount" @click="handleDeleteAccount">
+              {{ deletingAccount ? '탈퇴 처리 중...' : '회원탈퇴' }}
+            </button>
           </div>
 
           </section>

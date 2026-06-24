@@ -190,6 +190,21 @@ export const useAuthStore = defineStore('auth', () => {
     profileLoaded.value = true
   }
 
+  async function deleteAccount() {
+    const { error } = await supabase.functions.invoke('delete-account', {
+      method: 'POST',
+    })
+
+    if (error) throw error
+
+    // The server has removed the auth user, so clear the local session even if
+    // the automatic SIGNED_OUT event has not arrived yet.
+    await supabase.auth.signOut({ scope: 'local' })
+    user.value = null
+    profile.value = null
+    profileLoaded.value = true
+  }
+
   async function signInWithGoogle(joinPostId = null, pendingInvite = null) {
     const params = new URLSearchParams()
     if (joinPostId)    params.set('pendingJoin',   joinPostId)
@@ -205,5 +220,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isNewUser = () => user.value && profileLoaded.value && !profile.value
 
-  return { user, profile, loading, profileLoaded, init, exchangeOAuthCode, fetchProfile, signOut, signInWithGoogle, isNewUser }
+  return { user, profile, loading, profileLoaded, init, exchangeOAuthCode, fetchProfile, signOut, deleteAccount, signInWithGoogle, isNewUser }
 })
