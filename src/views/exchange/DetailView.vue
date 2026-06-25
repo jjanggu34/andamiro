@@ -544,13 +544,15 @@ async function handleDeleteComment(commentId) {
       border-radius: 20px;
       color: $primary;
       border: 1px solid $border;
+      font-size: $font12;
+      font-weight: $font-sb;
     }
   }
 }
 
 .detail-comments {
   > div {
-    padding: 12px 24px 0;
+    padding: 12px 0 0;
     border-top: 1px solid $border;
   }
 }
