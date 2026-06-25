@@ -204,6 +204,8 @@ async function onSave() {
     width:auto;
     padding:4px 12px;
     border-radius:20px;
+    font-size:$font12;
+    font-weight:$font-m;
   }
 
 

@@ -27,7 +27,7 @@ defineProps({
   gap: 8px;
 
   &__label {
-    font-size: $font14;
+    font-size: $font16;
     font-weight: $font-sb;
     color: $title;
   }
