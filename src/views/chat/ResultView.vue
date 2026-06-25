@@ -183,10 +183,10 @@ async function saveAndGo(path, state = {}, options = {}) {
 
 const goHome     = () => saveAndGo('/main')
 const goExchange = () => openModal({
-  icon:        '📖',
-  title:       '교환일기를 작성할까요?',
+  title:       '공유일기를 작성할까요?',
   description: '오늘의 감정을 친구와 나눠보세요.',
-  btnLabel:    '교환일기 작성하기',
+  cancelLabel: '다음에 하기',
+  btnLabel:    '작성하기',
   onConfirm:   () => saveAndGo('/exchange/write', { summary: analysis.value?.summary ?? chat.content }, { saveDiary: false }),
 })
 

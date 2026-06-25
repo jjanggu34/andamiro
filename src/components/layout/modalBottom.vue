@@ -5,6 +5,7 @@ defineProps({
   title:       { type: String,  default: ''    },
   titleClass:  { type: String,  default: ''    },
   description: { type: String,  default: ''    },
+  cancelLabel: { type: String,  default: ''    },
   btnLabel:    { type: String,  default: '확인' },
 })
 defineEmits(['close', 'confirm'])
@@ -25,6 +26,9 @@ defineEmits(['close', 'confirm'])
           </div>
           <div class="modal-bottom__footer">
             <slot name="footer">
+              <button v-if="cancelLabel" class="btn-ctp btn-ctp--secondary" @click="$emit('close')">
+                {{ cancelLabel }}
+              </button>
               <button class="btn-ctp" @click="$emit('confirm')">{{ btnLabel }}</button>
             </slot>
           </div>
@@ -54,13 +58,13 @@ defineEmits(['close', 'confirm'])
   padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 24px;
 
   &__body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     text-align: center;
   }
 
@@ -70,6 +74,7 @@ defineEmits(['close', 'confirm'])
   }
 
   &__title {
+    padding-top: 16px;
     font-size: $font20;
     font-weight: $font-b;
     color: $title;
@@ -91,13 +96,18 @@ defineEmits(['close', 'confirm'])
     .btn-ctp {
       width: 100%;
       height: 56px;
-      border-radius: 100px;
       font-size: $font18;
       font-weight: $font-sb;
       background: $primary;
       color: $white;
       border: none;
       cursor: pointer;
+
+      &--secondary {
+        background: $white;
+        color: $primary;
+        border: 1px solid $primary;
+      }
     }
   }
 }

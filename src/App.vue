@@ -100,6 +100,7 @@ onBeforeUnmount(() => {
       :icon="modalOptions.icon"
       :title="modalOptions.title"
       :description="modalOptions.description"
+      :cancel-label="modalOptions.cancelLabel"
       :btn-label="modalOptions.btnLabel"
       @close="closeModal"
       @confirm="confirmModal"
