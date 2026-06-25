@@ -201,7 +201,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
               <div class="card-item my-list">
                 <RouterLink to="/exchange" class="my-list__item">
                     <span class="my-list__icon my-list__icon--exchange"></span>
-                    <span class="my-list__text">공감 일기</span>
+                    <span class="my-list__text">공유 일기</span>
                 </RouterLink>
                   <button class="my-list__item" @click="togglePush">
                     <span class="my-list__icon my-list__icon--notice"></span>
