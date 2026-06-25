@@ -118,7 +118,7 @@ button:disabled {
 }
 
 .btn-write {
-    position:absolute;
+    position:fixed;
     display:inline-flex;
     align-items: center;
     justify-content:center;
@@ -136,10 +136,10 @@ button:disabled {
       mask-image: url("/assets/img/com/ico-write.svg");
       -webkit-mask-image: url("/assets/img/com/ico-write.svg");
       mask-repeat: no-repeat;
-      mask-size: 30px auto;
+      mask-size: 25px auto;
       mask-position: center;
       -webkit-mask-repeat: no-repeat;
-      -webkit-mask-size: 30px auto;
+      -webkit-mask-size: 25px auto;
       -webkit-mask-position: center;
     }
   }
@@ -202,7 +202,7 @@ main + footer {
   flex: 1;
   width: 100%;
 
-  .btn-ctp { flex: 1; }
+  .btn-ctp { flex: 1; font-size:$font16; }
 
   .btn-ctp--secondary {
     width: auto;

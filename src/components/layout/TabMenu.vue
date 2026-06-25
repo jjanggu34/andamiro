@@ -50,7 +50,7 @@ defineEmits(['update:modelValue'])
 
   &.is-active {
     color: $primary;
-    font-weight: $font-sb;
+    font-weight: $font-b;
     border-bottom:2px solid $primary;
   }
 }

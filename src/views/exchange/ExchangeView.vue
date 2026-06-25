@@ -2,7 +2,6 @@
 import { computed, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
-import AppTabBar from '@/components/layout/AppTabBar.vue'
 import TabMenu from '@/components/layout/TabMenu.vue'
 import LoadingSkeleton from '@/components/common/LoadingSkeleton.vue'
 import NoData from '@/components/common/NoData.vue'
@@ -108,7 +107,7 @@ function formatPostDate(dateValue) {
 </script>
 
 <template>
-  <PageLayout title="공유일기" back-to="/main">
+  <PageLayout title="공유일기" back-to="/my">
     <template #body>
       <main class="list-body">
         <TabMenu v-model="activeTab" :tabs="tabs" />
@@ -189,9 +188,6 @@ function formatPostDate(dateValue) {
         </div>
 
       </main>
-    </template>
-    <template #footer>
-      <AppTabBar />
     </template>
   </PageLayout>
 </template>
