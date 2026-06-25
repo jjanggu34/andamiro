@@ -204,13 +204,11 @@ onMounted(runAnalysis)
         <template v-else>
           <!-- 점수 섹션 -->
           <section class="importance-content">
-            <div class="text-content">
-              <div class="text-group">
+            <div class="grap-content">
+              <h3>
                 <span>데일리 채팅 분석</span>
                 <em>오늘의 감정 점수</em>
-              </div>
-            </div>
-            <div class="grap-content">
+              </h3>
               <div class="grap-group score-chart">
                 <!-- ECharts 원복 시: 아래 SvgGauge 주석 처리 후 VChart 주석 해제 -->
                 <SvgGauge :score="gaugeScore" :color-from="gaugeColors.from" :color-to="gaugeColors.to" />
@@ -266,7 +264,7 @@ onMounted(runAnalysis)
       </main>
 
       <FooterCtp
-        secondary-label="교환일기작성"
+        secondary-label="공유일기 작성"
         :label="saving ? '저장 중…' : '홈으로'"
         :disabled="loading || saving"
         :secondary-disabled="loading || saving"
@@ -288,7 +286,11 @@ onMounted(runAnalysis)
 
 // ── 점수 섹션 ──
 
-.text-content { margin-bottom: 8px; }
+.text-content {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
 .text-group {
   display: flex;
   flex-direction: column;
@@ -299,7 +301,8 @@ onMounted(runAnalysis)
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 0;
 }
 
 // ── ECharts 게이지 ──

@@ -269,6 +269,10 @@ footer {
     }
   }
 
+  span {
+    color: $text-75;
+  }
+
   h2 {
     margin: 0;
     color: $title;
@@ -312,6 +316,16 @@ footer {
     padding-bottom: 30px;
   }
 
+  h3 {
+    display:block;
+    width: 100%;
+    text-align:left;
+
+    span { color: $text-75; font-size:1rem; }
+    em {  display:block; font-size: $font20; margin-top:8px; font-weight: $font-b; }
+
+  }
+
   &.round {
     border-radius: 20px 20px 0 0;
     padding: 20px 0;
@@ -341,7 +355,7 @@ footer {
 
   .card-item {
     padding: 16px;
-    border: 1px solid #ebebeb;
+    border: 0;
     border-radius: 16px;
     background: $white;
     color: $text-default;
@@ -349,7 +363,7 @@ footer {
     > h3,
     .result-insight-panel__title {
       margin: 0 0 12px;
-      font-size: $font16;
+      font-size: $font18;
       font-weight: $font-b;
       color: $title;
       text-align: center;
