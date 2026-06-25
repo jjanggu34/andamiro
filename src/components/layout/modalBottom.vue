@@ -51,10 +51,10 @@ defineEmits(['close', 'confirm'])
   width: 100%;
   background: $white;
   border-radius: 24px 24px 0 0;
-  padding: 32px 24px calc(24px + env(safe-area-inset-bottom));
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 
   &__body {
     display: flex;
