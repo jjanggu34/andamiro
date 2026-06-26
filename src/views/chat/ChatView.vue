@@ -469,7 +469,7 @@ onBeforeUnmount(() => {
             @click="pickFromGallery"
           />
           <ModalButton
-            title="영상으로 분석"
+            title="실시간 표정 분석"
             description="카메라로 표정을 실시간 분석해요"
             icon="video"
             @click="pickFromCamera"
