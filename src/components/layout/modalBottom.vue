@@ -79,7 +79,7 @@ defineEmits(['close', 'confirm'])
     font-weight: $font-b;
     color: $title;
 
-    &.title-l {  width:100%; text-align:left;  font-size: $font18; }
+    &.title-l {  padding-top:0; width:100%; text-align:left;  font-size: $font18; }
   }
 
   &__desc {
