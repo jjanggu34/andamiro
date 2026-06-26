@@ -47,11 +47,10 @@ async function installApp() {
 <template>
   <div class="wrap">
     <div id="bodyWrap" class="login">
-      <video class="login-animation" autoplay muted loop playsinline preload="auto"
+      <!--<video class="login-animation" autoplay muted loop playsinline preload="auto"
         poster="/assets/img/login/movie.png" aria-hidden="true">
         <source src="/assets/img/login/movie.mp4" type="video/mp4" />
-      </video>
-
+      </video>-->
       <main>
         <section class="importance-content">
           <div class="text-content">
@@ -59,6 +58,9 @@ async function installApp() {
               <em>하루의 시작과 마무리를<br />함께 만들어요!</em>
               <span>대화하며 쉽게 기록하고 함께 기록된<br />AI 인사이트를 확인해 보세요</span>
             </div>
+          </div>
+          <div class="img-content">
+            <p></p>
           </div>
         </section>
       </main>
@@ -100,6 +102,24 @@ async function installApp() {
 </template>
 
 <style scoped lang="scss">
+#bodyWrap.login .img-content {
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items: center;
+
+    p {
+      content:"";
+      margin:0 auto;
+      display:block;
+      width:280px;
+      height:280px;
+      background: url("/assets/img/main/img-splash.gif") no-repeat center /100%;
+
+    }
+}
+
+
 .login-webview-warn {
   background: #fff8e1;
   border: 1px solid #ffe082;

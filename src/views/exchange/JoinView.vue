@@ -336,7 +336,7 @@ async function join() {
   background: none;
   border: none;
   color: $text-sub;
-  font-size: $font14;
+  font-size: $font16;
   cursor: pointer;
   padding: 4px 0;
 
