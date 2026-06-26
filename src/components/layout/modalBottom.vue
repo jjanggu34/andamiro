@@ -96,7 +96,7 @@ defineEmits(['close', 'confirm'])
     .btn-ctp {
       width: 100%;
       height: 56px;
-      font-size: $font18;
+      font-size: $font16;
       font-weight: $font-sb;
       background: $primary;
       color: $white;
