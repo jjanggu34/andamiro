@@ -27,7 +27,7 @@
       min-height: 110px;
       background: url("/assets/img/advice/bg_fortune.png") no-repeat right center / 110px;
       .text-group {
-        h2 { font-size:$font20; font-weight:$font-sb; }
+        h2 { padding-right:100px; font-size:$font20; font-weight:$font-sb;  }
         .advice-hero__score {
           .advice-hero__score-num{ font-size:48px; font-weight:$font-eb; color:$title; }
         }
