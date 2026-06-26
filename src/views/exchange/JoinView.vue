@@ -90,10 +90,13 @@ async function join() {
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
         </span>
-        <h2 class="join-pw__title">비밀번호를 입력해 주세요</h2>
-        <p class="join-pw__desc">
-          <em class="join-pw__post-name">"{{ post.title }}"</em>를<br>읽으려면 비밀번호가 필요해요.
-        </p>
+        <div class="text-content">
+          <h2 class="join-pw__title">비밀번호를 입력해 주세요</h2>
+          <p class="join-pw__desc">
+            <em class="join-pw__post-name">"{{ post.title }}"</em>를<br>읽으려면 비밀번호가 필요해요.
+          </p>
+        </div>
+
         <div class="join-pw__field">
           <p>
             <span class="join-pw__field-icon" aria-hidden="true">
@@ -224,9 +227,9 @@ async function join() {
     justify-content: center;
     width: 72px;
     height: 72px;
-    border-radius: 50%;
-    background: rgba(108, 99, 255, 0.12);
-    color: #6c63ff;
+    border-radius: $radius-lg-20;
+    background: rgba(66, 131, 243, 0.10);
+    color: #4283F3;
     margin-bottom: 4px;
     flex-shrink: 0;
   }
