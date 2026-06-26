@@ -147,7 +147,7 @@ async function runAnalysis() {
 }
 
 // ── 저장 후 이동 ──
-async function saveAndGo(path, state = {}, options = {}) {
+async function saveAndGo(to, state = {}, options = {}) {
   saving.value = true
   saveError.value = ''
   try {
@@ -172,7 +172,11 @@ async function saveAndGo(path, state = {}, options = {}) {
       })
     }
     chat.reset()
-    router.push({ path, state })
+    if (typeof to === 'string') {
+      router.push({ path: to, state })
+    } else {
+      router.push({ ...to, state })
+    }
   } catch (e) {
     console.error('[save error]', e)
     saveError.value = e?.message || e?.code || JSON.stringify(e) || '저장에 실패했어요.'
@@ -187,7 +191,16 @@ const goExchange = () => openModal({
   description: '오늘의 감정을 친구와 나눠보세요.',
   cancelLabel: '다음에 하기',
   btnLabel:    '작성하기',
-  onConfirm:   () => saveAndGo('/exchange/write', { summary: analysis.value?.summary ?? chat.content }, { saveDiary: false }),
+  onConfirm:   () => saveAndGo(
+    {
+      path: '/exchange/write',
+      query: { source: 'ai' },
+    },
+    {
+      summary: analysis.value?.summary ?? chat.content,
+    },
+    { saveDiary: false },
+  ),
 })
 
 onMounted(runAnalysis)

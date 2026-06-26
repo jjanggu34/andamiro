@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import PageLayout from '@/components/layout/PageLayout.vue'
 import FooterCtp from '@/components/layout/FooterCtp.vue'
 import FormGroup from '@/components/common/FormGroup.vue'
 import { useExchangeStore } from '@/stores/exchange'
 import { supabase } from '@/lib/supabase'
 
+const route    = useRoute()
 const router   = useRouter()
 const exchange = useExchangeStore()
 
@@ -26,6 +27,7 @@ const contentError  = ref('')
 const passwordError = ref('')
 const saveError     = ref('')
 const clientRequestId = ref(crypto.randomUUID())
+const isAiDiary = computed(() => route.query.source === 'ai')
 
 async function polishContent(summary) {
   const { data: { session } } = await supabase.auth.getSession()
@@ -141,7 +143,7 @@ async function onSave() {
   <PageLayout title="공유일기 만들기" back-to="/exchange">
     <template #body>
       <main class="write-body">
-        <section class="badge-content">
+        <section v-if="isAiDiary" class="badge-content">
             <p class="badge-info">✦ AI가 오늘의 일기를 작성했어요</p>
         </section>
         <section class="form-content">
