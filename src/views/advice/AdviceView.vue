@@ -98,7 +98,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageLayout title="조언" body-class="advice-page">
+  <PageLayout title="조언" body-class="advice-page" hide-back hide-right>
     <template #body>
       <main class="advice-page">
         <!-- 데이터 있을 때 -->

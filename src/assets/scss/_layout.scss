@@ -174,6 +174,14 @@ body:has(.wrap.has-tab-footer) {
         margin-left: -40px;
       }
     }
+
+    &.header--no-back.header--no-right {
+      h1 {
+        span {
+          margin-left: 0;
+        }
+      }
+    }
   }
 
   header:has(.header__right) {
@@ -875,5 +883,4 @@ footer {
   }
 
 }
-
 

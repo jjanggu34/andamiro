@@ -136,7 +136,7 @@ watch(() => auth.user, (user) => {
 </script>
 
 <template>
-  <PageLayout title="리포트">
+  <PageLayout title="리포트" hide-back hide-right>
     <template #body>
       <main class="report-main">
         <!-- 데이터 있을 때 -->

@@ -8,6 +8,7 @@ const props = defineProps({
   bodyClass:  { type: String,  default: '' },
   hideHeader: { type: Boolean, default: false },
   hideBack:   { type: Boolean, default: false },
+  hideRight:  { type: Boolean, default: false },
   interceptBack: { type: Boolean, default: false },
 })
 
@@ -27,7 +28,14 @@ function goBack() {
 <template>
   <div class="wrap">
     <div v-if="!hideHeader" id="headerWrap">
-      <header id="header" class="header">
+      <header
+        id="header"
+        class="header"
+        :class="{
+          'header--no-back': hideBack,
+          'header--no-right': hideRight,
+        }"
+      >
         <button v-if="!hideBack" class="header__back" @click="goBack" aria-label="뒤로">
           <span class="header__back-icon" />
         </button>
@@ -37,7 +45,7 @@ function goBack() {
           <span>{{ title }}</span>
         </h1>
 
-        <div class="header__right">
+        <div v-if="!hideRight" class="header__right">
           <slot name="action">
             <button
               v-if="actionLabel"

@@ -194,7 +194,7 @@ onMounted(runAnalysis)
 </script>
 
 <template>
-  <PageLayout title="오늘의 일기분석" back-to="/chat">
+  <PageLayout title="오늘의 일기분석" hide-back hide-right>
     <template #body>
       <main class="result-main">
 

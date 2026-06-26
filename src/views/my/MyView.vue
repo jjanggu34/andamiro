@@ -148,7 +148,7 @@ onMounted(() => Promise.all([diary.fetchStats(), exchange.fetchMyExchangeCount()
 
 
 <template>
-  <PageLayout v-if="!showProfileEditor" title="마이" class="my">
+  <PageLayout v-if="!showProfileEditor" title="마이" class="my" hide-back hide-right>
     <template #body>
       <main class="my-page">
         <div class="my-body">
